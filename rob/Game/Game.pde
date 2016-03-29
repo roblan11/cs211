@@ -1,6 +1,6 @@
 /* global variables */
 
-boolean removeTrees = false; /* remove "trees" when hit */
+boolean removeTrees = true; /* remove "trees" when hit */
 boolean isTree = true; /* display tree w/ leafs */
 
 int framerate = 30; /* framerate of the animation */
