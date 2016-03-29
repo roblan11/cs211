@@ -1,5 +1,8 @@
 /* global variables */
 
+boolean removeTrees = false; /* remove "trees" when hit */
+boolean isTree = true; /* display tree w/ leafs */
+
 int framerate = 30; /* framerate of the animation */
 int window = 500; /* window size (square) */
 
@@ -16,11 +19,9 @@ PShape openCylinder = new PShape(); /* mantle of cylinder */
 PShape cylinderTop = new PShape(); /* top of cylinder */
 PShape cylinderBottom = new PShape(); /* bottom of cylinder */
 int leafSize = 20; /* size of leafball */
-boolean isTree = true; /* display tree w/ leafs */
 
 boolean addMode = false; /* adding-cylinders mode */
 ArrayList<PVector> cylinders = new ArrayList(); /* positions of cylinders */
-int elems = 0; /* total number of cylinders */
 int border = (window - boxSize)/2; /* width of the border around the beard in adding-cylinders mode */
 
 PFont f; /* font preset */
@@ -118,17 +119,19 @@ void draw() {
 
   /* cylinder display */
   translate(0, -(cylinderHeight + boxHeight/2), 0);
-  for (PVector i : cylinders) {
-    translate( (i.x - width/2), 0, (i.y - height/2) );
+  for (int i=0; i<cylinders.size(); ++i) {
+    PVector curr = cylinders.get(i);
+    translate( (curr.x - width/2), 0, (curr.y - height/2) );
     shape(openCylinder);
     shape(cylinderTop);
     shape(cylinderBottom);
-    translate(0, -(cylinderHeight/2), 0);
     if (isTree) {
+      translate(0, -(cylinderHeight/2), 0);
       fill(leafC);
       sphere(leafSize);
+      translate(0, (cylinderHeight/2), 0);
     }
-    translate( -(i.x - width/2), (cylinderHeight/2), -(i.y - height/2) );
+    translate( -(curr.x - width/2), 0, -(curr.y - height/2) );
   }
   translate(0, (cylinderHeight + boxHeight/2), 0);
 
@@ -144,6 +147,9 @@ void draw() {
   mover.display();
   translate(0, (boxHeight/2 + ballSize), 0);
   popMatrix();
+
+
+
   if (showtext) {
     pushMatrix(); /* matrix for text displays */
 
@@ -155,7 +161,7 @@ void draw() {
     text(rScale, 0, 20); /* display rscale */
     text("("+mouseX+", "+mouseY+")", 0, 40); /* display mouse pos (X , Y) */
     text("("+(rotZ*180/PI)+"°, "+(rotX*180/PI)+"°)", 0, 60); /* display rotations (Z , X) */
-    text(elems, 0, 80); /* display current number of cylinders */
+    text(cylinders.size(), 0, 80); /* display current number of cylinders */
     popMatrix();
   }
 }
@@ -194,7 +200,6 @@ void mousePressed() {
     if ( (mouseX >= border) && (mouseX <= (window - border) ) && 
       (mouseY >= border) && (mouseY <= (window - border) ) ) {
       cylinders.add(new PVector(mouseX, mouseY));
-      ++elems;
     }
   }
 }
