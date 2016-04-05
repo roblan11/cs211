@@ -1,16 +1,22 @@
 /* global variables */
 
-boolean removeTrees = true; /* remove "trees" when hit */
-boolean isTree = true; /* display tree w/ leafs */
+boolean removeTrees = false; /* remove "trees" when hit */
+boolean isTree = false; /* display tree w/ leafs */
 
 int framerate = 30; /* framerate of the animation */
-int window = 500; /* window size (square) */
+int windowWidth = 1500; /* window width */
+int windowHeight = 1000; /* window height */
 
-int boxSize = 300; /* sidelength of box */
+int boxSize = 500; /* sidelength of box */
 int boxHeight = 20; /* height of box */
+float score = 0;
+float last = 0;
 
 int ballSize = 12; /* radius of ball */
 Mover mover; /* mover for ball */
+PVector location; /* ball location vector */
+PVector velocity; /* ball velocity vector */
+float limit = (boxSize/2.0); /* limit on x and z axis */
 
 float cylinderBaseSize = 10; /* radius of cylinder */
 float cylinderHeight = 30; /* height of cylinder */
@@ -22,22 +28,32 @@ int leafSize = 20; /* size of leafball */
 
 boolean addMode = false; /* adding-cylinders mode */
 ArrayList<PVector> cylinders = new ArrayList(); /* positions of cylinders */
-int border = (window - boxSize)/2; /* width of the border around the beard in adding-cylinders mode */
+int borderHor = (windowHeight - boxSize)/2; /* width of the horizontal border around the beard in adding-cylinders mode */
+int borderVer = (windowWidth - boxSize)/2; /* width of the vertical border -''- */
+
+ArrayList<Float> scores = new ArrayList();
+
+PGraphics dataB;
+PGraphics topView;
+PGraphics scoreBoard;
+PGraphics barChart;
 
 PFont f; /* font preset */
 boolean showtext = true; /* display text */
 
-color backgroundC = color(200, 230, 200); /* background color */
+color backgroundC = color(240, 240, 240); /* background color */
 color boardC = color(255, 255, 255); /* board color */
 color ballC = color(200, 0, 0); /* ball color */
 color textC = color(0, 0, 0); /* text color */
 color cylinderC = color(153, 76, 0); /* cylinder color */
 color leafC = color(0, 102, 0); /* leaf color */
+color dataC = color(255, 255, 200); /* bottom color */
+color topViewC = color(0, 0, 255); /* top view color */
 
 
 
 void settings() {
-  size(window, window, P3D);
+  size(windowWidth, windowHeight, P3D);
 }
 
 
@@ -87,6 +103,12 @@ void setup() {
   cylinderTop.endShape();
 
   cylinderBottom.endShape();
+
+  /* surface ___ */
+  dataB = createGraphics(windowWidth, 220, P2D);
+  topView = createGraphics(200, 200, P2D);
+  scoreBoard = createGraphics(150, 200, P2D);
+  barChart = createGraphics(windowWidth - 390, 180, P2D);
 }
 
 
@@ -99,9 +121,10 @@ void draw() {
   fill(boardC);
   background(backgroundC);
   lights();
-  camera(width/2, height/2, 450, 250, 250, 0, 0, 1, 0);
+  ambientLight(0, 100, 0, 1, 0, 0);
+  camera(windowWidth/2, windowHeight/2, min(windowWidth, windowHeight) - boxSize/6, windowWidth/2, windowHeight/2, 0, 0, 1, 0);
 
-  translate(width/2, height/2, 0);
+  translate(windowWidth/2, windowHeight/2, 0);
 
   /* rotate according to current mode */
   if (addMode) {
@@ -119,9 +142,8 @@ void draw() {
 
   /* cylinder display */
   translate(0, -(cylinderHeight + boxHeight/2), 0);
-  for (int i=0; i<cylinders.size(); ++i) {
-    PVector curr = cylinders.get(i);
-    translate( (curr.x - width/2), 0, (curr.y - height/2) );
+  for (PVector i : cylinders) {
+    translate( (i.x - width/2), 0, (i.y - height/2) );
     shape(openCylinder);
     shape(cylinderTop);
     shape(cylinderBottom);
@@ -131,7 +153,7 @@ void draw() {
       sphere(leafSize);
       translate(0, (cylinderHeight/2), 0);
     }
-    translate( -(curr.x - width/2), 0, -(curr.y - height/2) );
+    translate( -(i.x - width/2), 0, -(i.y - height/2) );
   }
   translate(0, (cylinderHeight + boxHeight/2), 0);
 
@@ -145,10 +167,20 @@ void draw() {
     mover.checkCylinderCollision();
   }
   mover.display();
-  translate(0, (boxHeight/2 + ballSize), 0);
+  translate(0, (boxHeight/2 + ballSize), 0);  
   popMatrix();
 
-
+  pushMatrix();
+  fill(255);
+  drawData();
+  image(dataB, 0, windowHeight - 220);
+  drawTop();
+  image(topView, 10, windowHeight - 210);
+  drawScores();
+  image(scoreBoard, 220, windowHeight - 210);
+  drawChart();
+  image(barChart, 380, windowHeight - 210);
+  popMatrix();
 
   if (showtext) {
     pushMatrix(); /* matrix for text displays */
@@ -166,6 +198,47 @@ void draw() {
   }
 }
 
+int counter = 10;
+
+void drawChart(){
+  barChart.beginDraw();
+  barChart.background(255);
+  barChart.endDraw();
+  if(counter < 10){
+    ++counter;
+  } else {
+    counter = 0;
+    scores.add(score);
+  }
+}
+void drawScores() {
+  scoreBoard.beginDraw();
+  scoreBoard.background(0);
+  scoreBoard.text("score", 10, 40);
+  scoreBoard.text(score, 10, 55);
+  scoreBoard.text("velocity", 10, 90);
+  scoreBoard.text(velocity.mag(), 10, 105);
+  scoreBoard.text("last change", 10, 140);
+  scoreBoard.text(last, 10, 155);
+  scoreBoard.endDraw();
+}
+void drawData() {
+  dataB.beginDraw();
+  dataB.background(dataC);
+  dataB.endDraw();
+}
+void drawTop() {
+  topView.beginDraw();
+  topView.noStroke();
+  topView.background(topViewC);
+  float topBall = ballSize*400.0/boxSize;
+  float topCyl = cylinderBaseSize*400/boxSize;
+  topView.ellipse((location.x + limit)*200/boxSize, (location.z + limit)*200/boxSize, topBall, topBall);
+  for (PVector i : cylinders) {
+    topView.ellipse((i.x - borderHor - (boxSize/2))*200/boxSize, (i.y - borderVer + (boxSize/2))*200/boxSize, topCyl, topCyl);
+  }
+  topView.endDraw();
+}
 
 /* variables for functions */
 float rotX = 0; /* rotation around x axis [-PI/3 , PI/3] */
@@ -197,8 +270,8 @@ void mousePressed() {
 
   /* add a new cylinder */
   if (addMode) {
-    if ( (mouseX >= border) && (mouseX <= (window - border) ) && 
-      (mouseY >= border) && (mouseY <= (window - border) ) ) {
+    if ( (mouseX >= borderVer) && (mouseX <= (windowWidth - borderVer) ) && 
+      (mouseY >= borderHor) && (mouseY <= (windowHeight - borderHor) ) ) {
       cylinders.add(new PVector(mouseX, mouseY));
     }
   }

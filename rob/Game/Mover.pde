@@ -1,12 +1,8 @@
 class Mover {
 
   /* class variables */
-  PVector location; /* location vector */
-  PVector velocity; /* velocity vector */
   PVector gravity; /* gravity vector */
   PVector frict; /* friction vector */
-
-  float limit = (boxSize/2.0); /* limit on x and z axis */
 
   Mover() {
     int y = 0; /* DO NOT CHANGE Y! */
@@ -44,22 +40,34 @@ class Mover {
     sphere(ballSize);
   }
 
+  void updateScore(int c){
+    last = c*velocity.mag();
+    score += last;
+    if(score < 0){
+      score = 0;
+    }
+  }
+
   /* check properties on all edges, bounce off, don't go over */
   void checkEdges() {    
     /* x direction */
     if (location.x > limit) {
+      updateScore(-1);
       velocity.x  *= -1;
       location.x = limit;
     } else if (location.x < -limit) {
+      updateScore(-1);
       velocity.x  *= -1;
       location.x = -limit;
     }
 
     /* z direction */
     if (location.z > limit) {
+      updateScore(-1);
       velocity.z *= -1;
       location.z = limit;
     } else if (location.z < -limit) {
+      updateScore(-1);
       velocity.z *= -1;
       location.z = -limit;
     }
@@ -74,14 +82,17 @@ class Mover {
   void checkCylinderCollision() {
     for (int i=0; i<cylinders.size(); ++i) {
       PVector curr = cylinders.get(i);
-      float difference = border + limit;
-      PVector cyl = new PVector( (curr.x - difference), 0, (curr.y - difference) );
+      float differenceX = borderVer + limit;
+      float differenceY = borderHor + limit;
+      PVector cyl = new PVector( (curr.x - differenceX), 0, (curr.y - differenceY) );
 
       if ( distance(location, cyl) <= (cylinderBaseSize + ballSize) ) {
         PVector n = new PVector( (location.x - cyl.x), 0, (location.z - cyl.z) ).normalize();
 
         velocity.sub( n.copy().mult( (velocity.dot(n)) * 2) );
         location = cyl.add(n.copy().mult( (cylinderBaseSize + ballSize) ));
+        
+        updateScore(1);
   
         if(removeTrees){
           cylinders.remove(i);
