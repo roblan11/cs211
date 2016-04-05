@@ -198,13 +198,14 @@ void draw() {
   }
 }
 
-int counter = 10;
+int counter = framerate/2;
 
+/* TODO ___ */
 void drawChart(){
   barChart.beginDraw();
   barChart.background(255);
   barChart.endDraw();
-  if(counter < 10){
+  if(counter < framerate/2){
     ++counter;
   } else {
     counter = 0;
@@ -214,12 +215,15 @@ void drawChart(){
 void drawScores() {
   scoreBoard.beginDraw();
   scoreBoard.background(0);
-  scoreBoard.text("score", 10, 40);
-  scoreBoard.text(score, 10, 55);
-  scoreBoard.text("velocity", 10, 90);
-  scoreBoard.text(velocity.mag(), 10, 105);
-  scoreBoard.text("last change", 10, 140);
-  scoreBoard.text(last, 10, 155);
+  scoreBoard.textFont(f);
+  scoreBoard.fill(255);
+  scoreBoard.textAlign(CENTER);
+  scoreBoard.text("score", 75, 40);
+  scoreBoard.text(score, 75, 55);
+  scoreBoard.text("velocity", 75, 90);
+  scoreBoard.text(velocity.mag(), 75, 105);
+  scoreBoard.text("last change", 75, 140);
+  scoreBoard.text(last, 75, 155);
   scoreBoard.endDraw();
 }
 void drawData() {
@@ -233,7 +237,9 @@ void drawTop() {
   topView.background(topViewC);
   float topBall = ballSize*400.0/boxSize;
   float topCyl = cylinderBaseSize*400/boxSize;
+  topView.fill(0, 255, 0);
   topView.ellipse((location.x + limit)*200/boxSize, (location.z + limit)*200/boxSize, topBall, topBall);
+  topView.fill(255);
   for (PVector i : cylinders) {
     topView.ellipse((i.x - borderHor - (boxSize/2))*200/boxSize, (i.y - borderVer + (boxSize/2))*200/boxSize, topCyl, topCyl);
   }
@@ -271,7 +277,7 @@ void mousePressed() {
   /* add a new cylinder */
   if (addMode) {
     if ( (mouseX >= borderVer) && (mouseX <= (windowWidth - borderVer) ) && 
-      (mouseY >= borderHor) && (mouseY <= (windowHeight - borderHor) ) ) {
+         (mouseY >= borderHor) && (mouseY <= (windowHeight - borderHor) ) ) {
       cylinders.add(new PVector(mouseX, mouseY));
     }
   }
