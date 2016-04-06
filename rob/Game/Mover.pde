@@ -17,19 +17,16 @@ class Mover {
   void update() {
 
     /* friction */
-    float normal = 1;
-    float mu = 0.15;
-    float frictmag = normal * mu;
     frict = velocity.copy();
-    frict.normalize().mult(frictmag);
+    frict.normalize().mult(0.1);
 
     /* gravity */
     float grav = 9.81; /* kinda fast, might change later */
     gravity.x = sin(rotZ) * grav;
     gravity.z = sin(-rotX) * grav;
 
-    velocity.add(gravity.mult(1.0/framerate)).sub(frict); /* update velocity : gravity scaled by deltaT (= 1/framerate) */
-    location.add(velocity); /* update location : velocity, -friction */
+    velocity.add(gravity.copy().mult(1.0/framerate)).sub(frict); /* update velocity : gravity scaled by deltaT (= 1/framerate), -friction */
+    location.add(velocity); /* update location : velocity */
   }
 
   /* draw sphere */

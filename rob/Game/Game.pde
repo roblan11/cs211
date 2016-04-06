@@ -1,14 +1,15 @@
-/* global variables */
+/* game variables (settings) */
 
 boolean removeTrees = false; /* remove "trees" when hit */
 boolean isTree = false; /* display tree w/ leafs */
+boolean showtext = false; /* display text */
 
 int framerate = 30; /* framerate of the animation */
 int windowWidth = 1500; /* window width */
 int windowHeight = 1000; /* window height */
 
 int boxSize = 500; /* sidelength of box */
-int boxHeight = 20; /* height of box */
+int boxHeight = 10; /* height of box */
 
 int ballSize = 12; /* radius of ball */
 
@@ -16,12 +17,25 @@ float cylinderBaseSize = 10; /* radius of cylinder */
 float cylinderHeight = 30; /* height of cylinder */
 int leafSize = 20; /* size of leafball */
 
-int statSize = 200;
-int statBorder = 10;
+int statSize = windowHeight/5; /* size of the bottom bar */
+int statBorder = 10; /* size of the border of the bottom bar */
 
+/* color collection */
 
-float score = 0;
-float last = 0;
+color backgroundC = color(240); /* background color */
+color boardC = color(255); /* board color */
+color ballC = color(200, 0, 0); /* ball color */
+color textC = color(0); /* text color */
+color cylinderC = color(153, 76, 0); /* cylinder color */
+color leafC = color(0, 102, 0); /* leaf color */
+color dataBackC = color(0); /* bottom color */
+color dataBoxC = color(255); /* top view color */
+color dataScoreTextC = color(255); /* stat text color */
+
+/* other variables */
+
+float score = 0; /* current score */
+float last = 0; /* last score change */
 
 Mover mover; /* mover for ball */
 PVector location; /* ball location vector */
@@ -38,6 +52,7 @@ ArrayList<PVector> cylinders = new ArrayList(); /* positions of cylinders */
 int borderHor = (windowHeight - boxSize)/2; /* width of the horizontal border around the beard in adding-cylinders mode */
 int borderVer = (windowWidth - boxSize)/2; /* width of the vertical border -''- */
 
+/* TODO ___ */
 ArrayList<Float> scores = new ArrayList();
 
 PGraphics dataB;
@@ -46,17 +61,6 @@ PGraphics scoreBoard;
 PGraphics barChart;
 
 PFont f; /* font preset */
-boolean showtext = true; /* display text */
-
-color backgroundC = color(240); /* background color */
-color boardC = color(255); /* board color */
-color ballC = color(200, 0, 0); /* ball color */
-color textC = color(0); /* text color */
-color cylinderC = color(153, 76, 0); /* cylinder color */
-color leafC = color(0, 102, 0); /* leaf color */
-color dataBackC = color(0); /* bottom color */
-color dataBoxC = color(255); /* top view color */
-color dataScoreTextC = color(255); /* stat text color */
 
 
 void settings() {
@@ -129,7 +133,7 @@ void draw() {
   background(backgroundC);
   lights();
   ambientLight(0, 100, 0, 1, 0, 0);
-  camera(windowWidth/2, windowHeight/2, min(windowWidth, windowHeight) - boxSize/6, windowWidth/2, windowHeight/2, 0, 0, 1, 0);
+  camera(windowWidth/2, windowHeight/2, windowHeight*7/8, windowWidth/2, windowHeight/2, 0, 0, 1, 0);  
 
   translate(windowWidth/2, windowHeight/2, 0);
 
@@ -177,7 +181,7 @@ void draw() {
   translate(0, (boxHeight/2 + ballSize), 0);  
   popMatrix();
   
-  pushMatrix();
+  pushMatrix(); /* matrix for bottom bar */
   fill(255);
   drawData();
   image(dataB, 0, windowHeight - (statSize + 2*statBorder));
@@ -254,7 +258,7 @@ void drawTop() {
   topView.endDraw();
 }
 
-/* variables for functions */
+/* additional variables */
 float rotX = 0; /* rotation around x axis [-PI/3 , PI/3] */
 float rotZ = 0; /* rotation around z axis [-PI/3 , PI/3] */
 
