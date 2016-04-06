@@ -9,22 +9,29 @@ int windowHeight = 1000; /* window height */
 
 int boxSize = 500; /* sidelength of box */
 int boxHeight = 20; /* height of box */
+
+int ballSize = 12; /* radius of ball */
+
+float cylinderBaseSize = 10; /* radius of cylinder */
+float cylinderHeight = 30; /* height of cylinder */
+int leafSize = 20; /* size of leafball */
+
+int statSize = 200;
+int statBorder = 10;
+
+
 float score = 0;
 float last = 0;
 
-int ballSize = 12; /* radius of ball */
 Mover mover; /* mover for ball */
 PVector location; /* ball location vector */
 PVector velocity; /* ball velocity vector */
 float limit = (boxSize/2.0); /* limit on x and z axis */
 
-float cylinderBaseSize = 10; /* radius of cylinder */
-float cylinderHeight = 30; /* height of cylinder */
 int cylinderResolution = 20; /* # polygons of cylinders */
 PShape openCylinder = new PShape(); /* mantle of cylinder */
 PShape cylinderTop = new PShape(); /* top of cylinder */
 PShape cylinderBottom = new PShape(); /* bottom of cylinder */
-int leafSize = 20; /* size of leafball */
 
 boolean addMode = false; /* adding-cylinders mode */
 ArrayList<PVector> cylinders = new ArrayList(); /* positions of cylinders */
@@ -41,15 +48,15 @@ PGraphics barChart;
 PFont f; /* font preset */
 boolean showtext = true; /* display text */
 
-color backgroundC = color(240, 240, 240); /* background color */
-color boardC = color(255, 255, 255); /* board color */
+color backgroundC = color(240); /* background color */
+color boardC = color(255); /* board color */
 color ballC = color(200, 0, 0); /* ball color */
-color textC = color(0, 0, 0); /* text color */
+color textC = color(0); /* text color */
 color cylinderC = color(153, 76, 0); /* cylinder color */
 color leafC = color(0, 102, 0); /* leaf color */
-color dataC = color(255, 255, 200); /* bottom color */
-color topViewC = color(0, 0, 255); /* top view color */
-
+color dataBackC = color(0); /* bottom color */
+color dataBoxC = color(255); /* top view color */
+color dataScoreTextC = color(255); /* stat text color */
 
 
 void settings() {
@@ -105,10 +112,10 @@ void setup() {
   cylinderBottom.endShape();
 
   /* surface ___ */
-  dataB = createGraphics(windowWidth, 220, P2D);
-  topView = createGraphics(200, 200, P2D);
-  scoreBoard = createGraphics(150, 200, P2D);
-  barChart = createGraphics(windowWidth - 390, 180, P2D);
+  dataB = createGraphics(windowWidth, statSize + 2*statBorder, P2D);
+  topView = createGraphics(statSize, statSize, P2D);
+  scoreBoard = createGraphics(statSize/2, statSize, P2D);
+  barChart = createGraphics(windowWidth - (statSize*3/2 + 4*statBorder), statSize - 2*statBorder, P2D);
 }
 
 
@@ -169,17 +176,17 @@ void draw() {
   mover.display();
   translate(0, (boxHeight/2 + ballSize), 0);  
   popMatrix();
-
+  
   pushMatrix();
   fill(255);
   drawData();
-  image(dataB, 0, windowHeight - 220);
+  image(dataB, 0, windowHeight - (statSize + 2*statBorder));
   drawTop();
-  image(topView, 10, windowHeight - 210);
+  image(topView, statBorder, windowHeight - (statSize + statBorder));
   drawScores();
-  image(scoreBoard, 220, windowHeight - 210);
+  image(scoreBoard, (statSize + 2*statBorder), windowHeight - (statSize + statBorder));
   drawChart();
-  image(barChart, 380, windowHeight - 210);
+  image(barChart, (statSize*3/2 + 3*statBorder), windowHeight - (statSize + statBorder));
   popMatrix();
 
   if (showtext) {
@@ -203,7 +210,7 @@ int counter = framerate/2;
 /* TODO ___ */
 void drawChart(){
   barChart.beginDraw();
-  barChart.background(255);
+  barChart.background(dataBoxC); 
   barChart.endDraw();
   if(counter < framerate/2){
     ++counter;
@@ -214,34 +221,35 @@ void drawChart(){
 }
 void drawScores() {
   scoreBoard.beginDraw();
-  scoreBoard.background(0);
+  scoreBoard.background(dataBackC);
   scoreBoard.textFont(f);
-  scoreBoard.fill(255);
+  scoreBoard.textSize(statSize/12);
   scoreBoard.textAlign(CENTER);
-  scoreBoard.text("score", 75, 40);
-  scoreBoard.text(score, 75, 55);
-  scoreBoard.text("velocity", 75, 90);
-  scoreBoard.text(velocity.mag(), 75, 105);
-  scoreBoard.text("last change", 75, 140);
-  scoreBoard.text(last, 75, 155);
+  scoreBoard.fill(dataScoreTextC); // scoreBoardTextC
+  scoreBoard.text("score", statSize/4, statSize/4 - 10);
+  scoreBoard.text(score, statSize/4, statSize/4 + 10);
+  scoreBoard.text("velocity", statSize/4, statSize/2 - 10);
+  scoreBoard.text(velocity.mag(), statSize/4, statSize/2 + 10);
+  scoreBoard.text("last change", statSize/4, statSize*3/4 - 10);
+  scoreBoard.text(last, statSize/4, statSize*3/4 + 10);
   scoreBoard.endDraw();
 }
 void drawData() {
   dataB.beginDraw();
-  dataB.background(dataC);
+  dataB.background(dataBackC);
   dataB.endDraw();
 }
 void drawTop() {
   topView.beginDraw();
   topView.noStroke();
-  topView.background(topViewC);
-  float topBall = ballSize*400.0/boxSize;
-  float topCyl = cylinderBaseSize*400/boxSize;
-  topView.fill(0, 255, 0);
-  topView.ellipse((location.x + limit)*200/boxSize, (location.z + limit)*200/boxSize, topBall, topBall);
-  topView.fill(255);
+  topView.background(dataBoxC);
+  float topBall = ballSize*2*statSize/boxSize;
+  float topCyl = cylinderBaseSize*2*statSize/boxSize;
+  topView.fill(ballC);
+  topView.ellipse((location.x + limit)*statSize/boxSize, (location.z + limit)*statSize/boxSize, topBall, topBall);
+  topView.fill(cylinderC);
   for (PVector i : cylinders) {
-    topView.ellipse((i.x - borderHor - (boxSize/2))*200/boxSize, (i.y - borderVer + (boxSize/2))*200/boxSize, topCyl, topCyl);
+    topView.ellipse((i.x - windowWidth/2 + boxSize)*statSize/boxSize - statSize/2, (i.y - windowHeight/2)*statSize/boxSize + statSize/2, topCyl, topCyl);
   }
   topView.endDraw();
 }
