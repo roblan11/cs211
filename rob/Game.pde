@@ -221,13 +221,14 @@ void draw() {
   }
 }
 
-int counter = framerate/2;
+int counter = framerate;
 int curMaxScore = 1;
 float squareSizeX;
 float squareSizeY = statGraphBaseBoxSize;
 int numBoxes = (statSize - 2*statBorder)/(int)squareSizeY;
+int graphWidth = (windowWidth - statSize*3/2 - 4*statBorder);
 
-/* TODO ___ */
+/* information about the current value of 1 box and the current max in the graph */
 void addInfo(){
   infoBar.beginDraw();
   infoBar.background(dataBackC);
@@ -248,19 +249,38 @@ void drawChart(){
   barChart.fill(ballC);
   barChart.stroke(255);
   squareSizeX = statGraphBaseBoxSize*(scrollBar.getPos() + 0.5);
-  ArrayList<Float> subScores;
-  if(scores.size() > floor((windowWidth - statSize*3/2 - 4*statBorder)/squareSizeX)){
-    subScores = new ArrayList(scores.subList(max(scores.size() - floor((windowWidth - statSize*3/2 - 4*statBorder)/squareSizeX), 0), scores.size()));
+  /* change to right side on fill-up */
+  if(scores.size() > floor(graphWidth/squareSizeX)){
+    for(int i = 0; i < floor(graphWidth/squareSizeX) + 1; ++i){
+      for(int j = 0; j*squareSizeY <= statSize - 2*statBorder; ++j){
+        if(j < scores.get(scores.size() - 1 - i)*numBoxes/curMaxScore){
+          barChart.rect(( graphWidth - ceil((i+1)*squareSizeX)), statSize - 2*statBorder - j*squareSizeY, squareSizeX, squareSizeY);
+        }
+      }
+    }
   } else {
-    subScores = scores;
-  }
-  for(int i = 0; i < floor((windowWidth - statSize*3/2 - 4*statBorder)/squareSizeX); ++i){
-    for(int j = 0; j*squareSizeY <= statSize - 2*statBorder; ++j){
-      if(i < subScores.size() && j < subScores.get(i)*numBoxes/curMaxScore){
-        barChart.rect(i*squareSizeX, statSize - 2*statBorder - j*squareSizeY, squareSizeX, squareSizeY);
+    for(int i = 0; i < floor(graphWidth/squareSizeX); ++i){
+      for(int j = 0; j*squareSizeY <= statSize - 2*statBorder; ++j){
+        if(i < scores.size() && j < scores.get(i)*numBoxes/curMaxScore){
+          barChart.rect(i*squareSizeX, statSize - 2*statBorder - j*squareSizeY, squareSizeX, squareSizeY);
+        }
       }
     }
   }
+  /* always stay left */
+  //ArrayList<Float> subScores;
+  //if(scores.size() > floor(graphWidth/squareSizeX)){
+  //  subScores = new ArrayList(scores.subList(max(scores.size() - floor(graphWidth/squareSizeX), 0), scores.size()));
+  //} else {
+  //  subScores = scores;
+  //}
+  //for(int i = 0; i < floor(graphWidth/squareSizeX); ++i){
+  //  for(int j = 0; j*squareSizeY <= statSize - 2*statBorder; ++j){
+  //    if(i < subScores.size() && j < subScores.get(i)*numBoxes/curMaxScore){
+  //      barChart.rect(i*squareSizeX, statSize - 2*statBorder - j*squareSizeY, squareSizeX, squareSizeY);
+  //    }
+  //  }
+  //}
   barChart.endDraw();
   if(!addMode){
     if(counter < framerate/2){
