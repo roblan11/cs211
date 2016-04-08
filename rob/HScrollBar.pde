@@ -1,8 +1,8 @@
 class HScrollbar {
-  float barWidth = windowWidth - 390;  //Bar's width in pixels
-  float barHeight = 10; //Bar's height in pixels
-  float xPosition = 380;  //Bar's x position in pixels
-  float yPosition = windowHeight - 20;  //Bar's y position in pixels
+  float barWidth;  //Bar's width in pixels
+  float barHeight; //Bar's height in pixels
+  float xPosition;  //Bar's x position in pixels
+  float yPosition;  //Bar's y position in pixels
   
   float sliderPosition, newSliderPosition;    //Position of slider
   float sliderPositionMin, sliderPositionMax; //Max and min values of slider
@@ -75,7 +75,7 @@ class HScrollbar {
    */
   boolean isMouseOver() {
     if (mouseX > xPosition && mouseX < xPosition+barWidth &&
-      mouseY > yPosition && mouseY < yPosition+barHeight) {
+        mouseY > yPosition && mouseY < yPosition+barHeight) {
       return true;
     }
     else {
@@ -88,13 +88,13 @@ class HScrollbar {
    */ 
   void display() {
     noStroke();
-    fill(204);
+    fill(255);
     rect(xPosition, yPosition, barWidth, barHeight);
     if (mouseOver || locked) {
       fill(0, 0, 0);
     }
     else {
-      fill(102, 102, 102);
+      fill(102);
     }
     rect(sliderPosition, yPosition, barHeight, barHeight);
   }

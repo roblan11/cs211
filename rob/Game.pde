@@ -19,6 +19,7 @@ int leafSize = 20; /* size of leafball */
 
 int statSize = windowHeight/5; /* size of the bottom bar */
 int statBorder = 10; /* size of the border of the bottom bar */
+int statGraphBaseBoxSize = 14;
 
 /* color collection */
 
@@ -59,9 +60,12 @@ PGraphics dataB;
 PGraphics topView;
 PGraphics scoreBoard;
 PGraphics barChart;
+PGraphics infoBar;
+boolean moveBoard = true;
 
 PFont f; /* font preset */
 
+HScrollbar scrollBar;
 
 void settings() {
   size(windowWidth, windowHeight, P3D);
@@ -119,7 +123,10 @@ void setup() {
   dataB = createGraphics(windowWidth, statSize + 2*statBorder, P2D);
   topView = createGraphics(statSize, statSize, P2D);
   scoreBoard = createGraphics(statSize/2, statSize, P2D);
-  barChart = createGraphics(windowWidth - (statSize*3/2 + 4*statBorder), statSize - 2*statBorder, P2D);
+  barChart = createGraphics((windowWidth - statSize*3/2 - 4*statBorder), statSize - 2*statBorder, P2D);
+  infoBar = createGraphics((windowWidth/2 - statSize*3/4 - 3*statBorder), 2*statBorder, P2D);
+  
+  scrollBar = new HScrollbar((statSize*3/2 + 3*statBorder), windowHeight - (2*statBorder), (windowWidth - (statSize*3/2 + 4*statBorder))/2, statBorder);
 }
 
 
@@ -183,14 +190,19 @@ void draw() {
   
   pushMatrix(); /* matrix for bottom bar */
   fill(255);
+  noLights();
   drawData();
   image(dataB, 0, windowHeight - (statSize + 2*statBorder));
   drawTop();
-  image(topView, statBorder, windowHeight - (statSize + statBorder));
+  image(topView, statBorder, (windowHeight - statSize - statBorder));
   drawScores();
-  image(scoreBoard, (statSize + 2*statBorder), windowHeight - (statSize + statBorder));
+  image(scoreBoard, (statSize + 2*statBorder), (windowHeight - statSize - statBorder));
   drawChart();
-  image(barChart, (statSize*3/2 + 3*statBorder), windowHeight - (statSize + statBorder));
+  image(barChart, (statSize*3/2 + 3*statBorder), (windowHeight - statSize - statBorder));
+  addInfo();
+  image(infoBar, (statSize*3/4 + statBorder*2 + windowWidth/2), windowHeight - (statBorder*5/2));
+  scrollBar.update();
+  scrollBar.display();
   popMatrix();
 
   if (showtext) {
@@ -210,17 +222,56 @@ void draw() {
 }
 
 int counter = framerate/2;
+int curMaxScore = 1;
+float squareSizeX;
+float squareSizeY = statGraphBaseBoxSize;
+int numBoxes = (statSize - 2*statBorder)/(int)squareSizeY;
 
 /* TODO ___ */
+void addInfo(){
+  infoBar.beginDraw();
+  infoBar.background(dataBackC);
+  infoBar.textFont(f);
+  infoBar.textSize(statBorder*3/2);
+  infoBar.fill(ballC);
+  infoBar.rect(statGraphBaseBoxSize*2 - squareSizeX, (statBorder*2 - squareSizeY)/2, squareSizeX, squareSizeY);
+  infoBar.fill(dataScoreTextC);
+  infoBar.textAlign(LEFT);
+  infoBar.text(" = " + ceil(curMaxScore/(float)numBoxes), 2*statGraphBaseBoxSize, statBorder*3/2);
+  infoBar.textAlign(RIGHT);
+  infoBar.text("max display: " + curMaxScore, (windowWidth/2 - statSize*3/4 - 3*statBorder), statBorder*3/2);
+  infoBar.endDraw();
+}
 void drawChart(){
   barChart.beginDraw();
-  barChart.background(dataBoxC); 
-  barChart.endDraw();
-  if(counter < framerate/2){
-    ++counter;
+  barChart.background(dataBoxC);
+  barChart.fill(ballC);
+  barChart.stroke(255);
+  squareSizeX = statGraphBaseBoxSize*(scrollBar.getPos() + 0.5);
+  ArrayList<Float> subScores;
+  if(scores.size() > floor((windowWidth - statSize*3/2 - 4*statBorder)/squareSizeX)){
+    subScores = new ArrayList(scores.subList(max(scores.size() - floor((windowWidth - statSize*3/2 - 4*statBorder)/squareSizeX), 0), scores.size()));
   } else {
-    counter = 0;
-    scores.add(score);
+    subScores = scores;
+  }
+  for(int i = 0; i < floor((windowWidth - statSize*3/2 - 4*statBorder)/squareSizeX); ++i){
+    for(int j = 0; j*squareSizeY <= statSize - 2*statBorder; ++j){
+      if(i < subScores.size() && j < subScores.get(i)*numBoxes/curMaxScore){
+        barChart.rect(i*squareSizeX, statSize - 2*statBorder - j*squareSizeY, squareSizeX, squareSizeY);
+      }
+    }
+  }
+  barChart.endDraw();
+  if(!addMode){
+    if(counter < framerate/2){
+      ++counter;
+    } else {
+      counter = 0;
+      scores.add(score);
+      if(score > curMaxScore){
+        curMaxScore = (int)score;
+      }
+    }
   }
 }
 void drawScores() {
@@ -229,7 +280,7 @@ void drawScores() {
   scoreBoard.textFont(f);
   scoreBoard.textSize(statSize/12);
   scoreBoard.textAlign(CENTER);
-  scoreBoard.fill(dataScoreTextC); // scoreBoardTextC
+  scoreBoard.fill(dataScoreTextC);
   scoreBoard.text("score", statSize/4, statSize/4 - 10);
   scoreBoard.text(score, statSize/4, statSize/4 + 10);
   scoreBoard.text("velocity", statSize/4, statSize/2 - 10);
@@ -283,8 +334,12 @@ float clampPI(float x) {
 
 void mousePressed() {
   /* avoid teleporting rotations after lifting the mouse */
-  lastMX = mouseX;
-  lastMY = mouseY;
+  if(!scrollBar.isMouseOver()){
+    lastMX = mouseX;
+    lastMY = mouseY;
+  } else {
+    moveBoard = false;
+  }
 
   /* add a new cylinder */
   if (addMode) {
@@ -297,11 +352,17 @@ void mousePressed() {
 
 /* rotate around the x and z axis on mousedrag */
 void mouseDragged() {
-  float delta = 0.01;
-  rotX = clampPI( rotX + rScale * delta * (lastMY - mouseY) );
-  rotZ = clampPI( rotZ + rScale * delta * (mouseX - lastMX) );
-  lastMX = mouseX;
-  lastMY = mouseY;
+  if(moveBoard){
+    float delta = 0.01;
+    rotX = clampPI( rotX + rScale * delta * (lastMY - mouseY) );
+    rotZ = clampPI( rotZ + rScale * delta * (mouseX - lastMX) );
+    lastMX = mouseX;
+    lastMY = mouseY;
+  }
+}
+
+void mouseReleased(){
+  moveBoard = true;
 }
 
 
