@@ -1,6 +1,8 @@
 class Mover {
 
   /* class variables */
+  PVector location; /* ball location vector */
+  PVector velocity; /* ball velocity vector */
   PVector gravity; /* gravity vector */
   PVector frict; /* friction vector */
 
@@ -83,7 +85,7 @@ class Mover {
       float differenceY = borderHor + limit;
       PVector cyl = new PVector( (curr.x - differenceX), 0, (curr.y - differenceY) );
 
-      if ( distance(location, cyl) <= (cylinderBaseSize + ballSize) ) {
+      if ( distance(location, cyl) < (cylinderBaseSize + ballSize) ) {
         PVector n = new PVector( (location.x - cyl.x), 0, (location.z - cyl.z) ).normalize();
 
         velocity.sub( n.copy().mult( (velocity.dot(n)) * 2) );

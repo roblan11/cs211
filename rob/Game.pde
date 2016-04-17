@@ -13,7 +13,7 @@ int boxHeight = 10; /* height of box */
 
 int ballSize = 12; /* radius of ball */
 
-float cylinderBaseSize = 10; /* radius of cylinder */
+float cylinderBaseSize = 20; /* radius of cylinder */
 float cylinderHeight = 30; /* height of cylinder */
 int leafSize = 20; /* size of leafball */
 
@@ -39,8 +39,6 @@ float score = 0; /* current score */
 float last = 0; /* last score change */
 
 Mover mover; /* mover for ball */
-PVector location; /* ball location vector */
-PVector velocity; /* ball velocity vector */
 float limit = (boxSize/2.0); /* limit on x and z axis */
 
 int cylinderResolution = 20; /* # polygons of cylinders */
@@ -189,7 +187,7 @@ void draw() {
   popMatrix();
   
   pushMatrix(); /* matrix for bottom bar */
-  fill(255);
+  noFill();
   noLights();
   drawData();
   image(dataB, 0, windowHeight - (statSize + 2*statBorder));
@@ -203,6 +201,22 @@ void draw() {
   image(infoBar, (statSize*3/4 + statBorder*2 + windowWidth/2), windowHeight - (statBorder*5/2));
   scrollBar.update();
   scrollBar.display();
+  if(addMode){
+    if(validCylinderPos()){
+      stroke(0, 255, 0);
+      noFill();
+      strokeWeight(2);
+      ellipse(mouseX, mouseY, 2*cylinderBaseSize, 2*cylinderBaseSize);
+    } else {
+      stroke(255, 0, 0);
+      noFill();
+      strokeWeight(2);
+      float strokeLength = cylinderBaseSize/sqrt(2);
+      line(mouseX - strokeLength, mouseY - strokeLength, mouseX + strokeLength, mouseY + strokeLength);
+      line(mouseX + strokeLength, mouseY - strokeLength, mouseX - strokeLength, mouseY + strokeLength);
+      ellipse(mouseX, mouseY, 2*cylinderBaseSize, 2*cylinderBaseSize);
+    }
+  }
   popMatrix();
 
   if (showtext) {
@@ -243,6 +257,7 @@ void addInfo(){
   infoBar.text("max display: " + curMaxScore, (windowWidth/2 - statSize*3/4 - 3*statBorder), statBorder*3/2);
   infoBar.endDraw();
 }
+
 void drawChart(){
   barChart.beginDraw();
   barChart.background(dataBoxC);
@@ -267,20 +282,6 @@ void drawChart(){
       }
     }
   }
-  /* always stay left */
-  //ArrayList<Float> subScores;
-  //if(scores.size() > floor(graphWidth/squareSizeX)){
-  //  subScores = new ArrayList(scores.subList(max(scores.size() - floor(graphWidth/squareSizeX), 0), scores.size()));
-  //} else {
-  //  subScores = scores;
-  //}
-  //for(int i = 0; i < floor(graphWidth/squareSizeX); ++i){
-  //  for(int j = 0; j*squareSizeY <= statSize - 2*statBorder; ++j){
-  //    if(i < subScores.size() && j < subScores.get(i)*numBoxes/curMaxScore){
-  //      barChart.rect(i*squareSizeX, statSize - 2*statBorder - j*squareSizeY, squareSizeX, squareSizeY);
-  //    }
-  //  }
-  //}
   barChart.endDraw();
   if(!addMode){
     if(counter < framerate/2){
@@ -294,6 +295,7 @@ void drawChart(){
     }
   }
 }
+
 void drawScores() {
   scoreBoard.beginDraw();
   scoreBoard.background(dataBackC);
@@ -304,16 +306,18 @@ void drawScores() {
   scoreBoard.text("score", statSize/4, statSize/4 - 10);
   scoreBoard.text(score, statSize/4, statSize/4 + 10);
   scoreBoard.text("velocity", statSize/4, statSize/2 - 10);
-  scoreBoard.text(velocity.mag(), statSize/4, statSize/2 + 10);
+  scoreBoard.text(mover.velocity.mag(), statSize/4, statSize/2 + 10);
   scoreBoard.text("last change", statSize/4, statSize*3/4 - 10);
   scoreBoard.text(last, statSize/4, statSize*3/4 + 10);
   scoreBoard.endDraw();
 }
+
 void drawData() {
   dataB.beginDraw();
   dataB.background(dataBackC);
   dataB.endDraw();
 }
+
 void drawTop() {
   topView.beginDraw();
   topView.noStroke();
@@ -321,7 +325,7 @@ void drawTop() {
   float topBall = ballSize*2*statSize/boxSize;
   float topCyl = cylinderBaseSize*2*statSize/boxSize;
   topView.fill(ballC);
-  topView.ellipse((location.x + limit)*statSize/boxSize, (location.z + limit)*statSize/boxSize, topBall, topBall);
+  topView.ellipse((mover.location.x + limit)*statSize/boxSize, (mover.location.z + limit)*statSize/boxSize, topBall, topBall);
   topView.fill(cylinderC);
   for (PVector i : cylinders) {
     topView.ellipse((i.x - windowWidth/2 + boxSize)*statSize/boxSize - statSize/2, (i.y - windowHeight/2)*statSize/boxSize + statSize/2, topCyl, topCyl);
@@ -352,6 +356,22 @@ float clampPI(float x) {
   }
 }
 
+boolean validCylinderPos(){
+  if ( (mouseX < borderVer) || (mouseX > (windowWidth - borderVer) ) || 
+       (mouseY < borderHor) || (mouseY > (windowHeight - borderHor) ) ) {
+    return false;
+  }
+  for(PVector i: cylinders){
+    if(i.dist(new PVector(mouseX, mouseY)) < 2*cylinderBaseSize ){
+      return false;
+    }
+  }
+  if(mover.distance(mover.location, new PVector(mouseX - borderVer - limit, 0, mouseY - borderHor - limit)) < cylinderBaseSize + ballSize){
+    return false;
+  }
+  return true;
+}
+
 void mousePressed() {
   /* avoid teleporting rotations after lifting the mouse */
   if(!scrollBar.isMouseOver()){
@@ -363,8 +383,7 @@ void mousePressed() {
 
   /* add a new cylinder */
   if (addMode) {
-    if ( (mouseX >= borderVer) && (mouseX <= (windowWidth - borderVer) ) && 
-         (mouseY >= borderHor) && (mouseY <= (windowHeight - borderHor) ) ) {
+    if ( validCylinderPos() ) {
       cylinders.add(new PVector(mouseX, mouseY));
     }
   }
