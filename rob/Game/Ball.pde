@@ -1,12 +1,13 @@
-class Mover {
+class Ball {
 
   /* class variables */
   PVector location; /* ball location vector */
   PVector velocity; /* ball velocity vector */
   PVector gravity; /* gravity vector */
   PVector frict; /* friction vector */
+  float limit = (boxSize/2.0); /* limit on x and z axis */
 
-  Mover() {
+  Ball() {
     int y = 0; /* DO NOT CHANGE Y! */
 
     /* set up vectors, no movement along y axis */
@@ -40,10 +41,10 @@ class Mover {
   }
 
   void updateScore(int c){
-    last = c*velocity.mag();
-    score += last;
-    if(score < 0){
-      score = 0;
+    scoreboard.last = c*velocity.mag();
+    scoreboard.score += scoreboard.last;
+    if(scoreboard.score < 0){
+      scoreboard.score = 0;
     }
   }
 
@@ -79,8 +80,8 @@ class Mover {
 
   /* check properties on all cylinders, bounce off, don't go in */
   void checkCylinderCollision() {
-    for (int i=0; i<cylinders.size(); ++i) {
-      PVector curr = cylinders.get(i);
+    for (int i=0; i<cylinder.list.size(); ++i) {
+      PVector curr = cylinder.list.get(i);
       float differenceX = borderVer + limit;
       float differenceY = borderHor + limit;
       PVector cyl = new PVector( (curr.x - differenceX), 0, (curr.y - differenceY) );
@@ -94,7 +95,7 @@ class Mover {
         updateScore(1);
   
         if(removeTrees){
-          cylinders.remove(i);
+          cylinder.list.remove(i);
           --i;
         }
       }
