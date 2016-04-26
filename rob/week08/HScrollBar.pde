@@ -1,12 +1,12 @@
-class HScrollbar {
-  
-  /* class variables */
+class HScrollBar {
   float barWidth;  //Bar's width in pixels
   float barHeight; //Bar's height in pixels
   float xPosition;  //Bar's x position in pixels
   float yPosition;  //Bar's y position in pixels
+  
   float sliderPosition, newSliderPosition;    //Position of slider
   float sliderPositionMin, sliderPositionMax; //Max and min values of slider
+  
   boolean mouseOver;  //Is the mouse over the slider?
   boolean locked;     //Is the mouse clicking and dragging the slider now?
 
@@ -18,7 +18,7 @@ class HScrollbar {
    * @param w The width of the bar in pixels
    * @param h The height of the bar in pixels
    */
-  HScrollbar (float x, float y, float w, float h) {
+  HScrollBar (float x, float y, float w, float h) {
     barWidth = w;
     barHeight = h;
     xPosition = x;

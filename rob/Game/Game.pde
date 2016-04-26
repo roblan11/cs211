@@ -1,4 +1,4 @@
-/* game variables (settings) */
+/* settings */
 boolean removeTrees = false; /* remove "trees" when hit */
 boolean isTree = false; /* display tree w/ leafs */
 boolean showtext = false; /* display text */
@@ -34,7 +34,7 @@ color dataScoreTextC = color(255); /* stat text color */
 /* other game variables */
 Ball ball; /* ball */
 Cylinder cylinder; /* cylinder */
-HScrollbar scrollBar; /* scrollbar */
+HScrollbar scrollbar; /* scrollbar */
 Scoreboard scoreboard; /* scoreboard */
 boolean addMode = false; /* adding-cylinders mode */
 int borderHor = (windowHeight - boxSize)/2; /* width of the horizontal border around the beard in adding-cylinders mode */
@@ -52,7 +52,8 @@ void setup() {
   /* initialize classes */
   ball = new Ball();
   cylinder = new Cylinder();
-  scrollBar = new HScrollbar((statSize*3/2 + 3*statBorder), windowHeight - (2*statBorder), (windowWidth - (statSize*3/2 + 4*statBorder))/2, statBorder);
+  scrollbar = new HScrollbar((statSize*3/2 + 3*statBorder), windowHeight - (2*statBorder), 
+                             (windowWidth - (statSize*3/2 + 4*statBorder))/2, statBorder);
   scoreboard = new Scoreboard();
 }
 
@@ -90,7 +91,7 @@ void draw() {
 
   /* ball display */
   translate(0, -(boxHeight/2 + ballSize), 0);
-  if (!addMode) {
+  if (!addMode && !scrollbar.locked) {
     ball.update();
     ball.checkEdges();
     ball.checkCylinderCollision();
@@ -142,11 +143,9 @@ float clampPI(float x) {
 
 void mousePressed() {
   /* avoid teleporting rotations after lifting the mouse */
-  if(!scrollBar.isMouseOver()){
+  if(!scrollbar.isMouseOver()){
     lastMX = mouseX;
     lastMY = mouseY;
-  } else {
-    scoreboard.moveBoard = false;
   }
   /* add a new cylinder */
   cylinder.putCylinder();
@@ -154,17 +153,13 @@ void mousePressed() {
 
 /* rotate around the x and z axis on mousedrag */
 void mouseDragged() {
-  if(scoreboard.moveBoard){
+  if(!scrollbar.locked){
     float delta = 0.01;
     rotX = clampPI( rotX + rScale * delta * (lastMY - mouseY) );
     rotZ = clampPI( rotZ + rScale * delta * (mouseX - lastMX) );
     lastMX = mouseX;
     lastMY = mouseY;
   }
-}
-
-void mouseReleased(){
-  scoreboard.moveBoard = true;
 }
 
 /* update scale of rotations on mwheel */

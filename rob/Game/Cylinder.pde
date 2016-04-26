@@ -69,6 +69,7 @@ class Cylinder{
     }
   }
   
+  /* check if cylinder can be placed here */
   boolean validCylinderPos(){
     if ( (mouseX < borderVer) || (mouseX > (windowWidth - borderVer) ) || 
          (mouseY < borderHor) || (mouseY > (windowHeight - borderHor) ) ) {
@@ -85,6 +86,7 @@ class Cylinder{
     return true;
   }
 
+  /* add a new cylinder */
   void putCylinder(){
     if (addMode) {
       if ( validCylinderPos() ) {
@@ -93,6 +95,7 @@ class Cylinder{
     }
   }
   
+  /* preview for cylinders, including preview for validity */
   void preview(){
     if(addMode){
       if(cylinder.validCylinderPos()){
