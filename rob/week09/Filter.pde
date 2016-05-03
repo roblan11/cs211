@@ -208,13 +208,11 @@ class Filter {
 
   void apply() {
     img = src.copy();
+    truncate(220);
+    swapAndClear();
+    threshold_to_zero(35);
+    swapAndClear();
     clamp_hue(115, 133);
-    swapAndClear();
-    //convolute(kC(GAUSS));
-    //swapAndClear();
-    convolute(kC(HKERNEL));
-    swapAndClear();
-    convolute(kC(VKERNEL));
     swapAndClear();
     sobel();
   }
