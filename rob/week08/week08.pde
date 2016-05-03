@@ -1,4 +1,5 @@
 PImage img;
+PImage src;
 PImage result;
 int limit1;
 int limit2;
@@ -10,8 +11,8 @@ void settings() {
 }
 
 void setup() {
-  img = loadImage("board1.jpg");
-  result = createImage(width, height, RGB);
+  src = loadImage("board1.jpg");
+  result = createImage(src.width, src.height, RGB);
   scrollbar = new HScrollBar(0, 580, 800, 20);
   scrollbar2 = new HScrollBar(0, 560, 800, 20);
 }
@@ -97,50 +98,65 @@ void clamp_hue(int min, int max) {
   result.updatePixels();
 }
 
-PImage convolute(PImage img, float[][] kernel) {
+void convolute(float[][] kernel) {
   int N = 3;
-  float weight = 1;
-  PImage result = createImage(img.width, img.height, ALPHA);
+  int weight = 0;
+  for (int i=0; i<N; ++i) {
+    for (int j=0; j<N; ++j) {
+      weight += kernel[i][j];
+    }
+  }
+  if (weight < 1) { 
+    weight = 1;
+  }
   int sum = 0;
   for (int i = N/2; i < result.width - N/2; i++) {
     for (int j = N/2; j < result.height - N/2; j++) {
       for (int k = 0; k < N; ++k) {
         for (int l = 0; l < N; ++l) {
-          sum += img.pixels[(j-N/2+l) * img.width + i-N/2+k]*kernel[k][l];
+          sum += img.pixels[(j-N/2+l)*img.width + i-N/2+k]*kernel[k][l];
         }
       }
-      if (sum < 0) { 
-        sum = 0;
-      }
-      if (sum > 255) { 
-        sum = 255;
-      }
-      result.pixels[j*img.width + i] = color((int)(sum / weight));
+      result.pixels[j*img.width + i] = sum / weight;
       sum = 0;
     }
   }
   result.updatePixels();
-  return result;
 }
 
-PImage sobel(PImage img) {
+void sobel() {
 
   float[][] hKernel = { { 0, 1, 0 }, {0, 0, 0}, 
     { 0, -1, 0 } };
   float[][] vKernel = { { 0, 0, 0 }, {1, 0, -1}, 
     {0, 0, 0 }};
-  
-  PImage result = createImage(img.width, img.height, ALPHA);
-  PImage r1 = createImage(img.width, img.height, ALPHA);
-  // clear the image
-  for (int i = 0; i < img.width * img.height; i++) {
-    result.pixels[i] = color(0);
-  }
+
   float max=0;
   float[] buffer = new float[img.width * img.height];
 
-  r1 = convolute(img, hKernel);
-  result = convolute(r1, vKernel);
+  int N = 3;
+  PImage result2 = createImage(img.width, img.height, ALPHA);
+  float sum_h = 0;
+  float sum_v = 0;
+  float sum = 0;
+  for (int i = N/2; i < result2.width - N/2; i++) {
+    for (int j = N/2; j < result2.height - N/2; j++) {
+      for (int k = 0; k < N; ++k) {
+        for (int l = 0; l < N; ++l) {
+          sum_h += img.pixels[(j-N/2+l) * img.width + i-N/2+k]*hKernel[k][l];
+          sum_v += img.pixels[(j-N/2+l) * img.width + i-N/2+k]*vKernel[k][l];
+        }
+      }
+      sum = sqrt(pow(sum_h, 2) + pow(sum_v, 2));
+      if (max < sum) {
+        max = sum;
+      }
+      buffer[j * img.width + i] = sum;
+      sum_h = 0;
+      sum_v = 0;
+    }
+  }
+  result.updatePixels();
 
   for (int y = 2; y < img.height - 2; y++) { // Skip top and bottom edges 
     for (int x = 2; x < img.width - 2; x++) { // Skip left and right
@@ -151,7 +167,7 @@ PImage sobel(PImage img) {
       }
     }
   }
-  return result;
+  result.updatePixels();
 }
 
 int DEFAULT = 1;
@@ -190,20 +206,49 @@ float[][] kC(int i) {
   }
 }
 
+void swapAndClear() {
+  img = result.copy();
+  for (int i=0; i<result.pixels.length; ++i) {
+    result.pixels[i] = color(0);
+  }
+  img.updatePixels();
+  result.updatePixels();
+}
+
+void apply() {
+  img = src.copy();
+  clamp_hue(115, 133);
+  swapAndClear();
+  convolute(kC(GAUSS));
+  swapAndClear();
+  //convolute(kC(HKERNEL));
+  //swapAndClear();
+  //convolute(kC(VKERNEL));
+  //swapAndClear();
+  sobel();
+}
+
 void draw() {
   //background(color(0, 0, 0));
 
   //limit1 = (int)(scrollbar.getPos()*255);
   //limit2 = (int)(scrollbar2.getPos()*255);
-
+  //img = loadImage("board1.jpg");
+  //println(limit1+" "+limit2);
   //clamp_hue(limit1, limit2);
+  //swapAndClear();
+  //convolute(kC(GAUSS));
+  //swapAndClear();
+  //convolute(kC(VKERNEL));
+  //swapAndClear();
+  //convolute(kC(HKERNEL));
+  //swapAndClear();
+  //sobel();
   //image(result, 0, 0);
   //scrollbar.update();
   //scrollbar.display();
   //scrollbar2.update();
   //scrollbar2.display();
-  
-  PImage res1 = convolute(img, kC(4));
-  
-  image(convolute(res1, kC(5)), 0, 0);
+  apply();
+  image(result, 0, 0);
 }
