@@ -4,14 +4,17 @@ import java.util.*;
 Capture cam;
 PImage img;
 Filter f;
+QuadGraph graph;
 int minVotes = 200;
 
 void settings() {
-  //size(800, 600);
-  fullScreen();
+  //size(640, 480);
+  size(800, 600);
+  //fullScreen();
 }
 void setup() {
   img = loadImage("board1.jpg");
+  graph = new QuadGraph();
 
   String[] cameras = Capture.list();
   if (cameras.length == 0) {
@@ -105,7 +108,6 @@ ArrayList<PVector> hough(PImage edgeImg, int nLines) {
     float phi = accPhi * discretizationStepsPhi;
     acc1.add(new PVector(r, phi));
   }
-
   return acc1;
 }
 
@@ -127,6 +129,13 @@ ArrayList<PVector> getIntersections(List<PVector> lines) {
   return intersections;
 }
 
+PVector intersection(PVector line1, PVector line2) {
+  float d = cos(line2.y)*sin(line1.y) - cos(line1.y)*sin(line2.y);
+  float x = ( line2.x*sin(line1.y) - line1.x*sin(line2.y))/d;
+  float y = (-line2.x*cos(line1.y) + line1.x*cos(line2.y))/d;
+  return new PVector(x, y);
+}
+
 PImage displayAcc(int[] accumulator, int rDim, int phiDim) {
   PImage houghImg = createImage(rDim+2, phiDim+2, ALPHA); 
   for (int i = 0; i < accumulator.length; i++) {
@@ -143,34 +152,19 @@ void draw() {
   if (cam.available() == true) {
     cam.read();
   }
-  img = cam.get();
+  //img = cam.get();
   image(img, 0, 0);
   f = new Filter(img);
-  f.apply();
+  f.display();
   PImage edgeImg = f.result.copy();
-  ArrayList<PVector> accumulator = hough(edgeImg, 8);
+  // /!\ NLINES == 8  
+  ArrayList<PVector> lines = hough(edgeImg, 8);
 
-  //float discretizationStepsPhi = 0.06f;
-  //float discretizationStepsR = 2.5f;
-  //int phiDim = (int) (Math.PI / discretizationStepsPhi);
-  //int rDim = (int) (((edgeImg.width + edgeImg.height) * 2 + 1) / discretizationStepsR);
-
-  //image(displayAcc(accumulator, rDim, phiDim), 0, 0);
-
-  //image(displayAcc(accumulator, rDim, phiDim), 0, 0);
-
-  //image(edgeImg, 0, 0);
-
-  for (int idx = 0; idx < accumulator.size(); idx++) {
+  for (int idx = 0; idx < lines.size(); idx++) {
     // first, compute back the (r, phi) polar coordinates:
-    PVector curr = accumulator.get(idx);
+    PVector curr = lines.get(idx);
     float r = curr.x;
     float phi = curr.y;
-    // Cartesian equation of a line: y = ax + b
-    // in polar, y = (-cos(phi)/sin(phi))x + (r/sin(phi))
-    // => y = 0 : x = r / cos(phi)
-    // => x = 0 : y = r / sin(phi)
-    // compute the intersection of this line with the 4 borders of // the image
     int x0 = 0;
     int y0 = (int) (r / sin(phi));
     int x1 = (int) (r / cos(phi));
@@ -198,48 +192,28 @@ void draw() {
         line(x2, y2, x3, y3);
     }
   }
-  getIntersections(accumulator);
+  getIntersections(lines);
 
-  //for (int idx = 0; idx < accumulator.length; idx++) {
-  //  if (accumulator[idx] > 200) {
-  //    // first, compute back the (r, phi) polar coordinates:
-  //    int accPhi = (int) (idx / (rDim + 2)) - 1;
-  //    int accR = idx - (accPhi + 1) * (rDim + 2) - 1;
-  //    float r = (accR - (rDim - 1) * 0.5f) * discretizationStepsR;
-  //    float phi = accPhi * discretizationStepsPhi;
-  //    // Cartesian equation of a line: y = ax + b
-  //    // in polar, y = (-cos(phi)/sin(phi))x + (r/sin(phi))
-  //    // => y = 0 : x = r / cos(phi)
-  //    // => x = 0 : y = r / sin(phi)
-  //    // compute the intersection of this line with the 4 borders of // the image
-  //    int x0 = 0;
-  //    int y0 = (int) (r / sin(phi));
-  //    int x1 = (int) (r / cos(phi));
-  //    int y1 = 0;
-  //    int x2 = edgeImg.width;
-  //    int y2 = (int) (-cos(phi) / sin(phi) * x2 + r / sin(phi));
-  //    int y3 = edgeImg.width;
-  //    int x3 = (int) (-(y3 - r / sin(phi)) * (sin(phi) / cos(phi)));
-  //    // Finally, plot the lines
-  //    stroke(204, 102, 0);
-  //    if (y0 > 0) {
-  //      if (x1 > 0)
-  //        line(x0, y0, x1, y1);
-  //      else if (y2 > 0)
-  //        line(x0, y0, x2, y2);
-  //      else
-  //        line(x0, y0, x3, y3);
-  //    } else {
-  //      if (x1 > 0) {
-  //        if (y2 > 0)
-  //          line(x1, y1, x2, y2);
-  //        else
-  //          line(x1, y1, x3, y3);
-  //      } else
-  //        line(x2, y2, x3, y3);
-  //    }
-  //  }
+  //graph.build(lines, width, height);
+  //List<int[]> quads = graph.filter(graph.findCycles());
+
+  //for (int[] quad : quads) {
+  // PVector l1 = lines.get(quad[0]);
+  // PVector l2 = lines.get(quad[1]);
+  // PVector l3 = lines.get(quad[2]);
+  // PVector l4 = lines.get(quad[3]);
+  // // (intersection() is a simplified version of the
+  // // intersections() method you wrote last week, that simply
+  // // return the coordinates of the intersection between 2 lines) 
+  // PVector c12 = intersection(l1, l2);
+  // PVector c23 = intersection(l2, l3);
+  // PVector c34 = intersection(l3, l4);
+  // PVector c41 = intersection(l4, l1);
+  // // Choose a random, semi-transparent colour
+  // Random random = new Random();
+  // fill(color(min(255, random.nextInt(300)), 
+  //   min(255, random.nextInt(300)), 
+  //   min(255, random.nextInt(300)), 50));
+  // quad(c12.x, c12.y, c23.x, c23.y, c34.x, c34.y, c41.x, c41.y);
   //}
-
-  //image(displayAcc(accumulator, rDim, phiDim), 0, 0);
 }

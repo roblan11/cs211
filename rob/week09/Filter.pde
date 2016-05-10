@@ -167,54 +167,54 @@ class Filter {
   int HKERNEL = 4;
   int VKERNEL = 5;
 
-  float[][] kC(int i) {
-    switch(i) {
-    case 2:
-      float[][] kernel2 = {{ 0, 1, 0 }, 
-        { 1, 0, 1 }, 
-        { 0, 1, 0 }};
-      return kernel2;
-    case 3:
-      float[][] gauss = {{ 9, 12, 9 }, 
-        {12, 15, 12 }, 
-        { 9, 12, 9 }};
-      return gauss;
-    case 4:
-      float[][] hKernel = {{ 0, 1, 0 }, 
-        { 0, 0, 0 }, 
-        { 0, -1, 0 }};
-      return hKernel;
-    case 5:
-      float[][] vKernel = {{ 0, 0, 0 }, 
-        { 1, 0, -1 }, 
-        { 0, 0, 0 }};
-      return vKernel;
-    default:
-      float[][] kernel1 = {{ 0, 0, 0 }, 
-        { 0, 1, 0 }, 
-        { 0, 0, 0 }};
-      return kernel1;
-    }
-  }
+  //float[][] kC(int i) {
+  //  switch(i) {
+  //  case 2:
+  //    float[][] kernel2 = {{ 0, 1, 0 }, 
+  //      { 1, 0, 1 }, 
+  //      { 0, 1, 0 }};
+  //    return kernel2;
+  //  case 3:
+  //    float[][] gauss = {{ 9, 12, 9 }, 
+  //      {12, 15, 12 }, 
+  //      { 9, 12, 9 }};
+  //    return gauss;
+  //  case 4:
+  //    float[][] hKernel = {{ 0, 1, 0 }, 
+  //      { 0, 0, 0 }, 
+  //      { 0, -1, 0 }};
+  //    return hKernel;
+  //  case 5:
+  //    float[][] vKernel = {{ 0, 0, 0 }, 
+  //      { 1, 0, -1 }, 
+  //      { 0, 0, 0 }};
+  //    return vKernel;
+  //  default:
+  //    float[][] kernel1 = {{ 0, 0, 0 }, 
+  //      { 0, 1, 0 }, 
+  //      { 0, 0, 0 }};
+  //    return kernel1;
+  //  }
+  //}
 
-  void swapAndClear() {
+  void swap() {
     img = result.copy();
-    for (int i=0; i<result.pixels.length; ++i) {
-      result.pixels[i] = color(0);
-    }
     img.updatePixels();
-    result.updatePixels();
   }
 
   void apply() {
     img = src.copy();
-    truncate(220);
-    swapAndClear();
-    threshold_to_zero(35);
-    swapAndClear();
-    clamp_hue(115, 133);
-    swapAndClear();
-    sobel();
+    truncate(225);
+    swap();
+    threshold_to_zero(30);
+    swap();
+    clamp_hue(90, 130);
+    //swap();
+    //convolute({{ 9, 12, 9 }, {12, 15, 12 }, { 9, 12, 9 }};);
+    //swap();
+    //threshold_to_zero(254);
+    //swap();
+    //sobel();
   }
 
   void display() {
