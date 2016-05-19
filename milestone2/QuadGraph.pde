@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 class QuadGraph {
-
+  
   List<int[]> cycles = new ArrayList<int[]>();
   int[][] graph;
 
@@ -52,13 +52,6 @@ class QuadGraph {
         findNewCycles(new int[] {graph[i][j]});
       }
     }
-    for (int[] cy : cycles) {
-      String s = "" + cy[0];
-      for (int i = 1; i < cy.length; i++) {
-        s += "," + cy[i];
-      }
-      System.out.println(s);
-    }
     return cycles;
   }
 
@@ -87,22 +80,20 @@ class QuadGraph {
       }
     }
   }
-
-  PVector v1;
-  PVector v2;
-  PVector v3;
-  PVector v4;
-  List<int[]> filter(List<int[]> list) {
-    for (int i = 0; i < list.size(); i++) {
-      v1 = new PVector(list.get(i)[0], list.get(i)[1]);
-      v2 = new PVector(list.get(i)[1], list.get(i)[2]);
-      v3 = new PVector(list.get(i)[2], list.get(i)[3]);
-      v4 = new PVector(list.get(i)[3], list.get(i)[0]);
-      if (!isConvex(v1, v2, v3, v4) || nonFlatQuad(v1, v2, v3, v4) || !validArea(v1, v2, v3, v4, Float.MAX_VALUE, (width * height)/10.0)) {
-        list.remove(i);
+  
+  /* CURRENTLY NOT USED IN THE PROGRAM */ 
+  List<int[]> filter(ArrayList<PVector> lines) {
+    List<int[]> ret = cycles;
+    for (int i = 0; i < cycles.size(); i++) {
+      PVector v1 = lines.get(ret.get(i)[0]);
+      PVector v2 = lines.get(ret.get(i)[1]);
+      PVector v3 = lines.get(ret.get(i)[2]);
+      PVector v4 = lines.get(ret.get(i)[3]);
+      if ( !isConvex(v1, v2, v3, v4) || !nonFlatQuad(v1, v2, v3, v4) || !validArea(v1, v2, v3, v4, Float.MAX_VALUE, 100) ) {
+        ret.remove(i);
       }
     }
-    return list;
+    return ret;
   }
 
   //  check of both arrays have same lengths and contents
@@ -195,28 +186,25 @@ class QuadGraph {
    */
   boolean isConvex(PVector c1, PVector c2, PVector c3, PVector c4) {
 
-    PVector v21= PVector.sub(c1, c2);
-    PVector v32= PVector.sub(c2, c3);
-    PVector v43= PVector.sub(c3, c4);
-    PVector v14= PVector.sub(c4, c1);
+    PVector v21 = PVector.sub(c1, c2); 
+    PVector v32 = PVector.sub(c2, c3); 
+    PVector v43 = PVector.sub(c3, c4); 
+    PVector v14 = PVector.sub(c4, c1); 
 
-    float i1=v21.cross(v32).z;
-    float i2=v32.cross(v43).z;
-    float i3=v43.cross(v14).z;
-    float i4=v14.cross(v21).z;
+    float i1 = v21.cross(v32).z;
+    float i2 = v32.cross(v43).z;
+    float i3 = v43.cross(v14).z;
+    float i4 = v14.cross(v21).z;
 
     if ( (i1>0 && i2>0 && i3>0 && i4>0) || (i1<0 && i2<0 && i3<0 && i4<0) ) {
       return true;
     } else {
-      System.out.println("Eliminating non-convex quad");
+      println("not convex");
       return false;
     }
   }
-
-  /** Compute the area of a quad, and check it lays within a specific range
-   */
-  boolean validArea(PVector c1, PVector c2, PVector c3, PVector c4, float max_area, float min_area) {
-
+  
+  float area(PVector c1, PVector c2, PVector c3, PVector c4){
     PVector v21= PVector.sub(c1, c2);
     PVector v32= PVector.sub(c2, c3);
     PVector v43= PVector.sub(c3, c4);
@@ -227,12 +215,18 @@ class QuadGraph {
     float i3=v43.cross(v14).z;
     float i4=v14.cross(v21).z;
 
-    float area = Math.abs(0.5f * (i1 + i2 + i3 + i4));
-    boolean valid = (area < max_area && area > min_area);
-    if (!valid) {
-      System.out.println("Area out of range");
-    }
+    return Math.abs(0.5f * (i1 + i2 + i3 + i4));
+  }
+  
+  /** Compute the area of a quad, and check it lays within a specific range
+   */
+  boolean validArea(PVector c1, PVector c2, PVector c3, PVector c4, float max_area, float min_area) {
 
+    float area = area(c1, c2, c3, c4);
+    boolean valid = (area < max_area && area > min_area);
+    if(!valid){
+      println("not valid area");
+    }
     return valid;
   }
 
@@ -255,7 +249,7 @@ class QuadGraph {
     if (cos1 < min_cos && cos2 < min_cos && cos3 < min_cos && cos4 < min_cos)
       return true;
     else {
-      System.out.println("Flat quad");
+      println("flat");
       return false;
     }
   }

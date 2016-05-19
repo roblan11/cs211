@@ -200,11 +200,7 @@ class Filter {
   }
 
   void sobel() {
-
-    /* USE KC */
-    //float[][] hKernel = { { 0, 1, 0 }, { 0, 0, 0}, { 0,-1, 0 }};
-    //float[][] vKernel = { { 0, 0, 0 }, { 1, 0,-1}, { 0, 0, 0 }};
-
+    
     float[][] hKernel = kC(HKERNEL);
     float[][] vKernel = kC(VKERNEL);
 
@@ -233,7 +229,6 @@ class Filter {
         sum_v = 0;
       }
     }
-    result.updatePixels();
 
     for (int y = 2; y < img.height - 2; y++) { // Skip top and bottom edges 
       for (int x = 2; x < img.width - 2; x++) { // Skip left and right
@@ -249,23 +244,13 @@ class Filter {
   
   /* apply the filters on result */
   void apply() {
-    //float[][] gauss5 = {{ 1, 4, 7, 4, 1 }, 
-    //                   { 4,16,26,16, 4 }, 
-    //                   { 7,26,41,26, 7 },
-    //                   { 4,16,26,16, 4 }, 
-    //                   { 1, 4, 7, 4, 1 }};
-
-    //float[][] gauss3 = {{ 9, 12, 9 }, 
-    //                   {12, 15,12 }, 
-    //                   { 9, 12, 9 }};
-
     img = src.copy();
     truncate(176);
     truncate_inverted(26);
-    clamp_hue(100, 140);
-    saturation_threshold(119);
+    clamp_hue(90, 135);
+    saturation_threshold(60);
     convolute(kC(GAUSS5));
-    threshold_to_zero(100);
+    threshold_to_zero(150);
     sobel();
   }
   
