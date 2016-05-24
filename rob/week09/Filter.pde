@@ -7,7 +7,61 @@ class Filter {
     src = image.copy();
     result = createImage(src.width, src.height, RGB);
   }
+  
+  /* proper collection of kernels with constants to call them */
+  int DEFAULT = 1;
+  int GRAIN = 2;
+  int GAUSS3 = 3;
+  int GAUSS5 = 6;
+  int HKERNEL = 4;
+  int VKERNEL = 5;
 
+  float[][] kC(int i) {
+    switch(i) {
+      case 2:
+        float[][] grain = {{ 0, 1, 0 }, 
+                             { 1, 0, 1 }, 
+                             { 0, 1, 0 }};
+        return grain;
+      case 3:
+        float[][] gauss3 = {{ 9, 12, 9 }, 
+                            {12, 15, 12 }, 
+                            { 9, 12, 9 }};
+        return gauss3;
+      case 4:
+        float[][] hKernel = {{ 0, 1, 0 }, 
+                             { 0, 0, 0 }, 
+                             { 0, -1, 0 }};
+        return hKernel;
+      case 5:
+        float[][] vKernel = {{ 0, 0, 0 }, 
+                             { 1, 0, -1 }, 
+                             { 0, 0, 0 }};
+        return vKernel;
+      case 6:
+        float[][] gauss5 = {{ 1, 4, 7, 4, 1 }, 
+                            { 4, 16, 26, 16, 4 }, 
+                            { 7, 26, 41, 26, 7 }, 
+                            { 4, 16, 26, 16, 4 }, 
+                            { 1, 4, 7, 4, 1 }};
+        return gauss5;
+      default:
+        float[][] other = {{ 0, 0, 0 }, 
+                           { 0, 1, 0 }, 
+                           { 0, 0, 0 }};
+        return other;
+    }
+  }
+  
+  /* update the images to continue computations */
+  void update() {
+    result.updatePixels();
+    img = result.copy();
+    img.updatePixels();
+  }
+  
+  /************************************** filters **************************************/
+  
   void threshold_binary(int limit) {
     for (int i = 0; i < img.width * img.height; i++) {
       // do something with the pixel img.pixels[i]
@@ -17,7 +71,7 @@ class Filter {
         result.pixels[i] = color(255);
       }
     }
-    result.updatePixels();
+    update();
   }
 
   void threshold_binary_inverted(int limit) {
@@ -29,7 +83,7 @@ class Filter {
         result.pixels[i] = color(0);
       }
     }
-    result.updatePixels();
+    update();
   }
 
   void truncate(int limit) {
@@ -41,7 +95,19 @@ class Filter {
         result.pixels[i] = color(limit);
       }
     }
-    result.updatePixels();
+    update();
+  }
+
+  void truncate_inverted(int limit) {
+    for (int i = 0; i < img.width * img.height; i++) {
+      // do something with the pixel img.pixels[i]
+      if (brightness(img.pixels[i]) > limit) {
+        result.pixels[i] = img.pixels[i];
+      } else {
+        result.pixels[i] = color(limit);
+      }
+    }
+    update();
   }
 
   void threshold_to_zero(int limit) {
@@ -53,7 +119,7 @@ class Filter {
         result.pixels[i] = img.pixels[i];
       }
     }
-    result.updatePixels();
+    update();
   }
 
   void threshold_to_zero_inverted(int limit) {
@@ -65,7 +131,7 @@ class Filter {
         result.pixels[i] = color(0);
       }
     }
-    result.updatePixels();
+    update();
   }
 
   void convert_hue() {
@@ -73,7 +139,7 @@ class Filter {
       // do something with the pixel img.pixels[i]
       result.pixels[i] = color((int)hue(img.pixels[i]));
     }
-    result.updatePixels();
+    update();
   }
 
   void clamp_hue(int min, int max) {
@@ -83,14 +149,25 @@ class Filter {
       if ( (hue < min) || (hue > max) ) {
         result.pixels[i] = color(0);
       } else {
+        result.pixels[i] = img.pixels[i];
+      }
+    }
+    update();
+  }
+
+  void saturation_threshold(int min) {
+    for (int i = 0; i < img.width * img.height; i++) {
+      if ( saturation(img.pixels[i]) < min ) {
+        result.pixels[i] = color(0);
+      } else {
         result.pixels[i] = color(255);
       }
     }
-    result.updatePixels();
+    update();
   }
 
   void convolute(float[][] kernel) {
-    int N = 3;
+    int N = kernel.length;
     int weight = 0;
     for (int i=0; i<N; ++i) {
       for (int j=0; j<N; ++j) {
@@ -100,27 +177,32 @@ class Filter {
     if (weight < 1) { 
       weight = 1;
     }
-    int sum = 0;
+
+    int r = 0;
+    int g = 0;
+    int b = 0;
     for (int i = N/2; i < result.width - N/2; i++) {
       for (int j = N/2; j < result.height - N/2; j++) {
         for (int k = 0; k < N; ++k) {
           for (int l = 0; l < N; ++l) {
-            sum += img.pixels[(j-N/2+l)*img.width + i-N/2+k]*kernel[k][l];
+            r += red(img.pixels[(j-N/2+l)*img.width + i-N/2+k])*kernel[k][l];
+            g += green(img.pixels[(j-N/2+l)*img.width + i-N/2+k])*kernel[k][l];
+            b += blue(img.pixels[(j-N/2+l)*img.width + i-N/2+k])*kernel[k][l];
           }
         }
-        result.pixels[j*img.width + i] = sum / weight;
-        sum = 0;
+        result.pixels[j*img.width + i] = color(r/weight, g/weight, b/weight);
+        r = 0; 
+        g = 0; 
+        b = 0;
       }
     }
-    result.updatePixels();
+    update();
   }
 
   void sobel() {
-
-    float[][] hKernel = { { 0, 1, 0 }, {0, 0, 0}, 
-      { 0, -1, 0 } };
-    float[][] vKernel = { { 0, 0, 0 }, {1, 0, -1}, 
-      {0, 0, 0 }};
+    
+    float[][] hKernel = kC(HKERNEL);
+    float[][] vKernel = kC(VKERNEL);
 
     float max=0;
     float[] buffer = new float[img.width * img.height];
@@ -147,7 +229,6 @@ class Filter {
         sum_v = 0;
       }
     }
-    result.updatePixels();
 
     for (int y = 2; y < img.height - 2; y++) { // Skip top and bottom edges 
       for (int x = 2; x < img.width - 2; x++) { // Skip left and right
@@ -158,67 +239,23 @@ class Filter {
         }
       }
     }
-    result.updatePixels();
+    update();
   }
-
-  int DEFAULT = 1;
-  int GRAIN = 2;
-  int GAUSS = 3;
-  int HKERNEL = 4;
-  int VKERNEL = 5;
-
-  //float[][] kC(int i) {
-  //  switch(i) {
-  //  case 2:
-  //    float[][] kernel2 = {{ 0, 1, 0 }, 
-  //      { 1, 0, 1 }, 
-  //      { 0, 1, 0 }};
-  //    return kernel2;
-  //  case 3:
-  //    float[][] gauss = {{ 9, 12, 9 }, 
-  //      {12, 15, 12 }, 
-  //      { 9, 12, 9 }};
-  //    return gauss;
-  //  case 4:
-  //    float[][] hKernel = {{ 0, 1, 0 }, 
-  //      { 0, 0, 0 }, 
-  //      { 0, -1, 0 }};
-  //    return hKernel;
-  //  case 5:
-  //    float[][] vKernel = {{ 0, 0, 0 }, 
-  //      { 1, 0, -1 }, 
-  //      { 0, 0, 0 }};
-  //    return vKernel;
-  //  default:
-  //    float[][] kernel1 = {{ 0, 0, 0 }, 
-  //      { 0, 1, 0 }, 
-  //      { 0, 0, 0 }};
-  //    return kernel1;
-  //  }
-  //}
-
-  void swap() {
-    img = result.copy();
-    img.updatePixels();
-  }
-
+  
+  /* apply the filters on result */
   void apply() {
     img = src.copy();
-    truncate(225);
-    swap();
-    threshold_to_zero(30);
-    swap();
-    clamp_hue(90, 130);
-    //swap();
-    //convolute({{ 9, 12, 9 }, {12, 15, 12 }, { 9, 12, 9 }};);
-    //swap();
-    //threshold_to_zero(254);
-    //swap();
-    //sobel();
+    truncate(176);
+    truncate_inverted(26);
+    clamp_hue(90, 135);
+    saturation_threshold(60);
+    convolute(kC(GAUSS5));
+    threshold_to_zero(150);
+    sobel();
   }
-
-  void display() {
-    apply();
-    image(result, 0, 0);
+  
+  /* display result at (x, y) */
+  void display(int x, int y) {
+    image(result, x, y);
   }
 }

@@ -1,54 +1,57 @@
 import processing.video.*;
 import java.util.*;
 
+/***************** SET THE IMAGE HERE *****************/
+String imageName = "board1.jpg";
+
+int numLines = 4;
+
+color lineStroke = color(124);
+color cornerFill = color(0);
+color quadStroke = color(255);
+color quadFill = color(0, 1);
+
 Capture cam;
 PImage img;
 Filter f;
 QuadGraph graph;
-int minVotes = 200;
+int minVotes = 1;
 
 void settings() {
   //size(640, 480);
   size(800, 600);
   //fullScreen();
+  noLoop();
 }
 void setup() {
-  img = loadImage("board1.jpg");
+  img = loadImage(imageName);
   graph = new QuadGraph();
 
-  String[] cameras = Capture.list();
-  if (cameras.length == 0) {
-    println("There are no cameras available for capture.");
-    exit();
-  } else {
-    println("Available cameras:");
-    for (int i = 0; i < cameras.length; i++) {
-      println(cameras[i]);
-    }
-    cam = new Capture(this, cameras[0]);
-    cam.start();
-  }
+  //String[] cameras = Capture.list();
+  //if (cameras.length == 0) {
+  //  println("There are no cameras available for capture.");
+  //  exit();
+  //} else {
+  //  println("Available cameras:");
+  //  for (int i = 0; i < cameras.length; i++) {
+  //    println(cameras[i]);
+  //  }
+  //  cam = new Capture(this, cameras[0]);
+  //  cam.start();
+  //}
 }
 
 
-ArrayList<PVector> hough(PImage edgeImg, int nLines) {
-  float discretizationStepsPhi = 0.06f;
-  float discretizationStepsR = 2.5f;
-  // dimensions of the accumulator
-  int phiDim = (int) (Math.PI / discretizationStepsPhi);
-  int rDim = (int) (((edgeImg.width + edgeImg.height) * 2 + 1) / discretizationStepsR);
-  // our accumulator (with a 1 pix margin)
+/* calculate the accumulator */
+int[] hough(PImage edgeImg, int rDim, float discretizationStepsR, int phiDim, float discretizationStepsPhi) {
   int[] accumulator = new int[(phiDim + 2) * (rDim + 2)];
-  // Fill the accumulator: on edge points (ie, white pixels of the edge // image), store all possible (r, phi) pairs describing lines going // through the point.
   for (int i=0; i<accumulator.length; ++i) {
     accumulator[i] = 0;
   }
 
   for (int y = 0; y < edgeImg.height; y++) {
     for (int x = 0; x < edgeImg.width; x++) {
-      // Are we on an edge?
       if (brightness(edgeImg.pixels[y * edgeImg.width + x]) != 0) {
-
         for (float phi = 0; phi < Math.PI; phi += discretizationStepsPhi) {
           float r = x * cos(phi) + y * sin(phi);
           r /= discretizationStepsR;
@@ -58,39 +61,31 @@ ArrayList<PVector> hough(PImage edgeImg, int nLines) {
       }
     }
   }
+  return accumulator;
+}
 
+/* find the best candidates from the accumulator */
+ArrayList<PVector> findBestCandidates(int[] accumulator, int nLines, int rDim, float discretizationStepsR, int phiDim, float discretizationStepsPhi) {
   ArrayList<Integer> bestCandidates = new ArrayList();
-
-  for (int i=0; i<accumulator.length; ++i) {
-    if (accumulator[i] > minVotes) {
-      bestCandidates.add(i);
-    }
-  }
-
-  // size of the region we search for a local maximum
   int neighbourhood = 10;
-  // only search around lines with more than this amount of votes // (to be adapted to your image)
   for (int accR = 0; accR < rDim; accR++) {
     for (int accPhi = 0; accPhi < phiDim; accPhi++) {
-      // compute current index in the accumulator
       int idx = (accPhi + 1) * (rDim + 2) + accR + 1;
       if (accumulator[idx] > minVotes) {
         boolean bestCandidate=true;
-        // iterate over the neighbourhood
-        for (int dPhi=-neighbourhood/2; dPhi < neighbourhood/2+1; dPhi++) { // check we are not outside the image
-          if ( accPhi+dPhi < 0 || accPhi+dPhi >= phiDim) continue;
-          for (int dR=-neighbourhood/2; dR < neighbourhood/2 +1; dR++) {
-            // check we are not outside the image
-            if (accR+dR < 0 || accR+dR >= rDim) continue;
+        for (int dPhi=-neighbourhood/2; dPhi < neighbourhood/2+1; dPhi++) { 
+          if ( accPhi+dPhi < 0 || accPhi+dPhi >= phiDim) { continue; }
+          for (int dR=-neighbourhood/2; dR < neighbourhood/2 +1; dR++) { 
+            if (accR+dR < 0 || accR+dR >= rDim) { continue; }
             int neighbourIdx = (accPhi + dPhi + 1) * (rDim + 2) + accR + dR + 1;
-            if (accumulator[idx] < accumulator[neighbourIdx]) { // the current idx is not a local maximum! bestCandidate=false;
+            if (accumulator[idx] < accumulator[neighbourIdx]) { 
+              bestCandidate = false;
               break;
             }
           }
-          if (!bestCandidate) break;
+          if (!bestCandidate) { break; }
         }
         if (bestCandidate) {
-          // the current idx *is* a local maximum
           bestCandidates.add(idx);
         }
       }
@@ -98,7 +93,6 @@ ArrayList<PVector> hough(PImage edgeImg, int nLines) {
   }
 
   Collections.sort(bestCandidates, new HoughComparator(accumulator));
-
   ArrayList<PVector> acc1 = new ArrayList();
   for (int i=0; i<min(bestCandidates.size(), nLines); ++i) {
     int idx = bestCandidates.get(i);
@@ -111,24 +105,7 @@ ArrayList<PVector> hough(PImage edgeImg, int nLines) {
   return acc1;
 }
 
-ArrayList<PVector> getIntersections(List<PVector> lines) {
-  ArrayList<PVector> intersections = new ArrayList<PVector>();
-  for (int i = 0; i < lines.size() - 1; i++) {
-    PVector line1 = lines.get(i);
-    for (int j = i + 1; j < lines.size(); j++) {
-      PVector line2 = lines.get(j);
-      // compute the intersection and add it to ’intersections’
-      float d = cos(line2.y)*sin(line1.y) - cos(line1.y)*sin(line2.y);
-      float x = ( line2.x*sin(line1.y) - line1.x*sin(line2.y))/d;
-      float y = (-line2.x*cos(line1.y) + line1.x*cos(line2.y))/d;
-      // draw the intersection
-      fill(255, 128, 0);
-      ellipse(x, y, 10, 10);
-    }
-  }
-  return intersections;
-}
-
+/* find the intersection between 2 lines */
 PVector intersection(PVector line1, PVector line2) {
   float d = cos(line2.y)*sin(line1.y) - cos(line1.y)*sin(line2.y);
   float x = ( line2.x*sin(line1.y) - line1.x*sin(line2.y))/d;
@@ -136,84 +113,134 @@ PVector intersection(PVector line1, PVector line2) {
   return new PVector(x, y);
 }
 
+/* find the intersections between lines */
+ArrayList<PVector> getIntersections(List<PVector> lines) {
+  noStroke();
+  ArrayList<PVector> intersections = new ArrayList<PVector>();
+  for (int i = 0; i < lines.size() - 1; i++) {
+    PVector line1 = lines.get(i);
+    for (int j = i + 1; j < lines.size(); j++) {
+      PVector line2 = lines.get(j);
+      PVector v = intersection(line1, line2);
+      intersections.add(v);
+      fill(cornerFill);
+      ellipse(v.x, v.y, 10, 10);
+    }
+  }
+  return intersections;
+}
+
+/* display the accumulator */
 PImage displayAcc(int[] accumulator, int rDim, int phiDim) {
   PImage houghImg = createImage(rDim+2, phiDim+2, ALPHA); 
   for (int i = 0; i < accumulator.length; i++) {
     houghImg.pixels[i] = color(min(255, accumulator[i]));
   }
-  // You may want to resize the accumulator to make it easier to see:
-  houghImg.resize(400, 400);
+  houghImg.resize(400, 600);
   houghImg.updatePixels();
   return houghImg;
 }
 
+void displayLine(PVector curr, PImage edgeImg){
+  float r = curr.x;
+  float phi = curr.y;
+  int x0 = 0;
+  int y0 = (int) (r / sin(phi));
+  int x1 = (int) (r / cos(phi));
+  int y1 = 0;
+  int x2 = edgeImg.width;
+  int y2 = (int) (-cos(phi) / sin(phi) * x2 + r / sin(phi));
+  int y3 = edgeImg.width;
+  int x3 = (int) (-(y3 - r / sin(phi)) * (sin(phi) / cos(phi)));
+  stroke(lineStroke);
+  if (y0 > 0) {
+    if (x1 > 0)
+      line(x0, y0, x1, y1);
+    else if (y2 > 0)
+      line(x0, y0, x2, y2);
+    else
+      line(x0, y0, x3, y3);
+  } else {
+    if (x1 > 0) {
+      if (y2 > 0)
+        line(x1, y1, x2, y2);
+      else
+        line(x1, y1, x3, y3);
+    } else
+      line(x2, y2, x3, y3);
+  }
+}
+
+/* display the lines */
+void displayLines(ArrayList<PVector> lines, PImage edgeImg) {
+  for (int idx = 0; idx < lines.size(); idx++) {
+    PVector curr = lines.get(idx);
+    displayLine(curr, edgeImg);
+  }
+}
+
+void drawQuad(int[] quad, ArrayList<PVector> lines){
+  if(quad.length == 4 && lines.size() > 0){
+    PVector l1 = lines.get(quad[0]);
+    PVector l2 = lines.get(quad[1]);
+    PVector l3 = lines.get(quad[2]);
+    PVector l4 = lines.get(quad[3]);
+    PVector c12 = intersection(l1, l2);
+    PVector c23 = intersection(l2, l3);
+    PVector c34 = intersection(l3, l4);
+    PVector c41 = intersection(l4, l1);
+    stroke(quadStroke);
+    fill(quadFill);
+    quad(c12.x, c12.y, c23.x, c23.y, c34.x, c34.y, c41.x, c41.y);
+  }
+}
+
+void drawQuads(List<int[]> quads, ArrayList<PVector> lines){
+  for (int[] quad : quads) {
+    drawQuad(quad, lines);
+  }
+}
+
+int[] findMaxQuad(List<int[]> quads, ArrayList<PVector> lines){
+  float bestArea = 0;
+  int[] bestQuad = new int[4];
+  for(int i=0; i<quads.size(); ++i){
+    int[] currQuad = quads.get(i);
+    float currArea = graph.area(lines.get(currQuad[0]), lines.get(currQuad[1]), lines.get(currQuad[2]), lines.get(currQuad[3]));
+    if(currArea > bestArea){
+      bestArea = currArea;
+      bestQuad = currQuad;
+    }
+  }
+  return bestQuad;
+}
+
+
 
 void draw() {
-  if (cam.available() == true) {
-    cam.read();
-  }
+  //if (cam.available() == true) {
+  //  cam.read();
+  //}
   //img = cam.get();
   image(img, 0, 0);
   f = new Filter(img);
-  f.display();
+  f.apply();
   PImage edgeImg = f.result.copy();
-  // /!\ NLINES == 8  
-  ArrayList<PVector> lines = hough(edgeImg, 8);
+  
+  float discretizationStepsPhi = 0.06f;
+  float discretizationStepsR = 2.5f;
+  int phiDim = (int) (Math.PI / discretizationStepsPhi);
+  int rDim = (int) (((edgeImg.width + edgeImg.height) * 2 + 1) / discretizationStepsR);
+  
+  int[] acc = hough(edgeImg, rDim, discretizationStepsR, phiDim, discretizationStepsPhi);
+  ArrayList<PVector> lines = findBestCandidates(acc, numLines, rDim, discretizationStepsR, phiDim, discretizationStepsPhi);
 
-  for (int idx = 0; idx < lines.size(); idx++) {
-    // first, compute back the (r, phi) polar coordinates:
-    PVector curr = lines.get(idx);
-    float r = curr.x;
-    float phi = curr.y;
-    int x0 = 0;
-    int y0 = (int) (r / sin(phi));
-    int x1 = (int) (r / cos(phi));
-    int y1 = 0;
-    int x2 = edgeImg.width;
-    int y2 = (int) (-cos(phi) / sin(phi) * x2 + r / sin(phi));
-    int y3 = edgeImg.width;
-    int x3 = (int) (-(y3 - r / sin(phi)) * (sin(phi) / cos(phi)));
-    // Finally, plot the lines
-    stroke(204, 102, 0);
-    if (y0 > 0) {
-      if (x1 > 0)
-        line(x0, y0, x1, y1);
-      else if (y2 > 0)
-        line(x0, y0, x2, y2);
-      else
-        line(x0, y0, x3, y3);
-    } else {
-      if (x1 > 0) {
-        if (y2 > 0)
-          line(x1, y1, x2, y2);
-        else
-          line(x1, y1, x3, y3);
-      } else
-        line(x2, y2, x3, y3);
-    }
-  }
-  getIntersections(lines);
-
-  //graph.build(lines, width, height);
-  //List<int[]> quads = graph.filter(graph.findCycles());
-
-  //for (int[] quad : quads) {
-  // PVector l1 = lines.get(quad[0]);
-  // PVector l2 = lines.get(quad[1]);
-  // PVector l3 = lines.get(quad[2]);
-  // PVector l4 = lines.get(quad[3]);
-  // // (intersection() is a simplified version of the
-  // // intersections() method you wrote last week, that simply
-  // // return the coordinates of the intersection between 2 lines) 
-  // PVector c12 = intersection(l1, l2);
-  // PVector c23 = intersection(l2, l3);
-  // PVector c34 = intersection(l3, l4);
-  // PVector c41 = intersection(l4, l1);
-  // // Choose a random, semi-transparent colour
-  // Random random = new Random();
-  // fill(color(min(255, random.nextInt(300)), 
-  //   min(255, random.nextInt(300)), 
-  //   min(255, random.nextInt(300)), 50));
-  // quad(c12.x, c12.y, c23.x, c23.y, c34.x, c34.y, c41.x, c41.y);
-  //}
+  displayLines(lines, edgeImg);
+  ArrayList<PVector> corn = getIntersections(lines);
+  
+  graph.build(lines, img.width, img.height);
+  graph.findCycles();
+  List<int[]> quads = graph.filter( lines );
+  //List<int[]> quads = graph.findCycles();
+  drawQuad(findMaxQuad(quads, lines), lines);
 }
