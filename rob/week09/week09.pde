@@ -2,7 +2,9 @@ import processing.video.*;
 import java.util.*;
 
 /***************** SET THE IMAGE HERE *****************/
-String imageName = "board1.jpg";
+String imageName = "test2.jpg";
+
+boolean useCam = false;
 
 int numLines = 4;
 
@@ -18,27 +20,30 @@ QuadGraph graph;
 int minVotes = 1;
 
 void settings() {
-  //size(640, 480);
-  size(800, 600);
-  //fullScreen();
-  noLoop();
+  if(useCam){
+    size(640, 480);
+  } else {
+    size(800, 600);
+    noLoop();
+  }
 }
 void setup() {
   img = loadImage(imageName);
   graph = new QuadGraph();
-
-  //String[] cameras = Capture.list();
-  //if (cameras.length == 0) {
-  //  println("There are no cameras available for capture.");
-  //  exit();
-  //} else {
-  //  println("Available cameras:");
-  //  for (int i = 0; i < cameras.length; i++) {
-  //    println(cameras[i]);
-  //  }
-  //  cam = new Capture(this, cameras[0]);
-  //  cam.start();
-  //}
+  if(useCam){
+    String[] cameras = Capture.list();
+    if (cameras.length == 0) {
+      println("There are no cameras available for capture.");
+      exit();
+    } else {
+      println("Available cameras:");
+      for (int i = 0; i < cameras.length; i++) {
+        println(cameras[i]);
+      }
+      cam = new Capture(this, cameras[0]);
+      cam.start();
+    }
+  }
 }
 
 
@@ -218,10 +223,12 @@ int[] findMaxQuad(List<int[]> quads, ArrayList<PVector> lines){
 
 
 void draw() {
-  //if (cam.available() == true) {
-  //  cam.read();
-  //}
-  //img = cam.get();
+  if(useCam){
+    if (cam.available() == true) {
+      cam.read();
+    }
+    img = cam.get();
+  }
   image(img, 0, 0);
   f = new Filter(img);
   f.apply();
@@ -236,11 +243,10 @@ void draw() {
   ArrayList<PVector> lines = findBestCandidates(acc, numLines, rDim, discretizationStepsR, phiDim, discretizationStepsPhi);
 
   displayLines(lines, edgeImg);
-  ArrayList<PVector> corn = getIntersections(lines);
+  getIntersections(lines);
   
   graph.build(lines, img.width, img.height);
-  graph.findCycles();
-  List<int[]> quads = graph.filter( lines );
-  //List<int[]> quads = graph.findCycles();
+  List<int[]> quads = graph.findCycles();
+  graph.filter( lines );
   drawQuad(findMaxQuad(quads, lines), lines);
 }

@@ -20,6 +20,7 @@ class TwoDThreeD {
   int boardDiv2 = ((int)boardSize)/2;
 
   // the 3D coordinates of the physical board corners, clockwise
+  /************************************** DONE? **************************************/
   float [][] physicalCorners = {
     {-boardDiv2, -boardDiv2, 0, 1},
     { boardDiv2, -boardDiv2, 0, 1},

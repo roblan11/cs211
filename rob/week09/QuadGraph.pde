@@ -23,22 +23,15 @@ class QuadGraph {
       }
     }
   }
-
+  
   /** Returns true if polar lines 1 and 2 intersect 
    * inside an area of size (width, height)
    */
   boolean intersect(PVector line1, PVector line2, int width, int height) {
 
-    double sin_t1 = Math.sin(line1.y);
-    double sin_t2 = Math.sin(line2.y);
-    double cos_t1 = Math.cos(line1.y);
-    double cos_t2 = Math.cos(line2.y);
-    float r1 = line1.x;
-    float r2 = line2.x;
-
-    double denom = cos_t2 * sin_t1 - cos_t1 * sin_t2;
-    int x = (int) ((r2 * sin_t1 - r1 * sin_t2) / denom);
-    int y = (int) ((-r2 * cos_t1 + r1 * cos_t2) / denom);
+    PVector inter = intersection(line1, line2);
+    int x = (int) inter.x;
+    int y = (int) inter.y;
     if (0 <= x && 0 <= y && width >= x && height >= y)
       return true;
     else
@@ -81,20 +74,13 @@ class QuadGraph {
     }
   }
   
-  PVector intersection(PVector line1, PVector line2) {
-    float d = cos(line2.y)*sin(line1.y) - cos(line1.y)*sin(line2.y);
-    float x = ( line2.x*sin(line1.y) - line1.x*sin(line2.y))/d;
-    float y = (-line2.x*cos(line1.y) + line1.x*cos(line2.y))/d;
-    return new PVector(x, y);
-  }
-  
-  List<int[]> filter(ArrayList<PVector> lines) {
-    List<int[]> ret = cycles;
+  /* filter the found cycles, removing non valid ones */
+  void filter(ArrayList<PVector> lines) {
     for (int i = 0; i < cycles.size(); i++) {
-      PVector v1 = lines.get(ret.get(i)[0]);
-      PVector v2 = lines.get(ret.get(i)[1]);
-      PVector v3 = lines.get(ret.get(i)[2]);
-      PVector v4 = lines.get(ret.get(i)[3]);
+      PVector v1 = lines.get(cycles.get(i)[0]);
+      PVector v2 = lines.get(cycles.get(i)[1]);
+      PVector v3 = lines.get(cycles.get(i)[2]);
+      PVector v4 = lines.get(cycles.get(i)[3]);
       PVector c1 = intersection(v1, v2);
       PVector c2 = intersection(v2, v3);
       PVector c3 = intersection(v3, v4);
@@ -103,10 +89,10 @@ class QuadGraph {
       println(v1 +" "+v2+" "+v3+" "+v4);
       if ( !isConvex(c1, c2, c3, c4) || !nonFlatQuad(c1, c2, c3, c4) || !validArea(c1, c2, c3, c4, Float.MAX_VALUE, 100) ) {
         println("removing: "+i);
-        ret.remove(i);
+        cycles.remove(i);
+        --i;
       }
     }
-    return ret;
   }
 
   //  check of both arrays have same lengths and contents
