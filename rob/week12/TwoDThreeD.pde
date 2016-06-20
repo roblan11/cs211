@@ -39,7 +39,7 @@ class TwoDThreeD {
     PVector a = quad.get(0);
     PVector b = quad.get(2);
     PVector center = new PVector((a.x+b.x)/2, (a.y+b.y)/2);
-    Collections.sort(quad, new CWComparator(center)); 
+    Collections.sort(quad, new PVectorCWComparator(center)); 
     
     /************************************** DONE? **************************************/
     int closestC = -1;

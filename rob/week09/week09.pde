@@ -2,16 +2,16 @@ import processing.video.*;
 import java.util.*;
 
 /***************** SET THE IMAGE HERE *****************/
-String imageName = "test2.jpg";
+String imageName = "board1.jpg";
 
-boolean useCam = false;
+boolean useCam = true;
 
 int numLines = 4;
 
 color lineStroke = color(124);
 color cornerFill = color(0);
 color quadStroke = color(255);
-color quadFill = color(0, 1);
+color quadFill = color(0, 255, 0, 50);
 
 Capture cam;
 PImage img;
@@ -28,6 +28,9 @@ void settings() {
   }
 }
 void setup() {
+  if(useCam){
+    frameRate(1);
+  }
   img = loadImage(imageName);
   graph = new QuadGraph();
   if(useCam){
@@ -242,8 +245,8 @@ void draw() {
   int[] acc = hough(edgeImg, rDim, discretizationStepsR, phiDim, discretizationStepsPhi);
   ArrayList<PVector> lines = findBestCandidates(acc, numLines, rDim, discretizationStepsR, phiDim, discretizationStepsPhi);
 
-  displayLines(lines, edgeImg);
-  getIntersections(lines);
+  //displayLines(lines, edgeImg);
+  //getIntersections(lines);
   
   graph.build(lines, img.width, img.height);
   List<int[]> quads = graph.findCycles();

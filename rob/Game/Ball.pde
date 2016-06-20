@@ -21,7 +21,7 @@ class Ball {
 
     /* friction */
     frict = velocity.copy();
-    frict.normalize().mult(0.1);
+    frict.normalize().mult(mu);
 
     /* gravity */
     float grav = 9.81; /* kinda fast, might change later */

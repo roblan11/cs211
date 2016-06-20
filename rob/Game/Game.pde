@@ -1,28 +1,43 @@
 /* settings */
-boolean removeTrees = false; /* remove "trees" when hit */
-boolean isTree = false; /* display tree w/ leafs */
-boolean showtext = false; /* display text */
+
+String videoName = "testvideo.mp4"; /* SET THE VIDEO NAME // PATH HERE */
+
+boolean removeTrees = true; /* remove "trees" when hit */
+boolean isTree = true; /* display tree w/ leafs */
+boolean showtext = true; /* display text */
+boolean drawHUD = true; /* display HUD */
+
+boolean useCam = true; /* true  = use cam or video to control the board
+                        * false = use mouse */
+boolean useVid = true; /* MUST SET useCam TO TRUE 
+                        * true  = use video file as input 
+                        * false = use camera as input */
+
+int numLines = 7; /* the number of lines in the ImageProcessing */
 
 int framerate = 30; /* framerate of the animation */
 int windowWidth = 1500; /* window width */
 int windowHeight = 1000; /* window height */
 
+float delta = 0.05; /* speed to turn the board */
+
 int boxSize = 500; /* sidelength of box */
 int boxHeight = 10; /* height of box */
 
 int ballSize = 12; /* radius of ball */
+float mu = 0.075; /* constant for friction */
 
 float cylinderBaseSize = 20; /* radius of cylinder */
-float cylinderHeight = 30; /* height of cylinder */
-int leafSize = 20; /* size of leafball */
+float cylinderHeight = 3*cylinderBaseSize; /* height of cylinder */
+float leafSize = 2*cylinderBaseSize; /* size of leafball */
 
 int statSize = windowHeight/5; /* size of the bottom bar */
 int statBorder = 10; /* size of the border of the bottom bar */
-int statGraphBaseBoxSize = 14;
+int statGraphBaseBoxSize = 14; /* size of a square of the graph */
 
 /* color collection */
 color backgroundC = color(240); /* background color */
-color boardC = color(255); /* board color */
+color boardC = color(0, 100, 0); /* board color */
 color ballC = color(200, 0, 0); /* ball color */
 color textC = color(0); /* text color */
 color cylinderC = color(153, 76, 0); /* cylinder color */
@@ -40,6 +55,9 @@ boolean addMode = false; /* adding-cylinders mode */
 int borderHor = (windowHeight - boxSize)/2; /* width of the horizontal border around the beard in adding-cylinders mode */
 int borderVer = (windowWidth - boxSize)/2; /* width of the vertical border -''- */
 PFont f; /* font preset */
+ImageProcessing imgProc = new ImageProcessing(); /* finding the quad */
+Capture cam; /* camera */
+Movie mov; /* movie */
 
 
 void settings() {
@@ -55,6 +73,34 @@ void setup() {
   scrollbar = new HScrollbar((statSize*3/2 + 3*statBorder), windowHeight - (2*statBorder), 
                              (windowWidth - (statSize*3/2 + 4*statBorder))/2, statBorder);
   scoreboard = new Scoreboard();
+  
+  /* initialize the image */
+  if (useCam) {
+    if (useVid) {
+      mov = new Movie(this, videoName);
+      mov.loop();
+    } else {
+      String[] cameras = Capture.list();
+      if (cameras.length == 0) {
+        exit();
+      } else {
+        cam = new Capture(this, cameras[0]);
+        cam.start();
+      }
+    }
+  }
+  
+}
+
+/* calculate the new rotation, to smoothen the board rotation */
+float findNewRot(float prev, float curr){
+  float ret = 0;
+  if(curr > prev){
+    ret = min(curr, prev + delta);
+  } else {
+    ret = max(curr, prev - delta);
+  }
+  return ret;
 }
 
 void draw() {
@@ -65,7 +111,6 @@ void draw() {
   fill(boardC);
   background(backgroundC);
   lights();
-  ambientLight(0, 100, 0, 1, 0, 0);
   camera(windowWidth/2, windowHeight/2, windowHeight*7/8, 
          windowWidth/2, windowHeight/2, 0, 
          0,             1,              0);  
@@ -73,6 +118,13 @@ void draw() {
   translate(windowWidth/2, windowHeight/2, 0);
 
   /* rotate according to current mode */
+  if(useCam){
+    imgProc.update();
+    float newRotX = imgProc.prev.x;
+    float newRotZ = imgProc.prev.y;
+    rotX = clampPI(findNewRot(rotX, newRotX));
+    rotZ = clampPI(findNewRot(rotZ, newRotZ));
+  }
   if (addMode) {
     rotateX(-PI/2);
     rotateZ(0);
@@ -101,7 +153,9 @@ void draw() {
   popMatrix();
   
   pushMatrix(); /* matrix for 2D shapes bar */
-  scoreboard.display();
+  if(drawHUD){
+    scoreboard.display();
+  }
   cylinder.preview();
   popMatrix();
 
@@ -119,6 +173,14 @@ void draw() {
     text(cylinder.list.size(), 0, 80); /* display current number of cylinders */
     popMatrix();
   }
+}
+
+/* find the intersection between 2 lines */
+PVector intersection(PVector line1, PVector line2) {
+  float d = cos(line2.y)*sin(line1.y) - cos(line1.y)*sin(line2.y);
+  float x = ( line2.x*sin(line1.y) - line1.x*sin(line2.y))/d;
+  float y = (-line2.x*cos(line1.y) + line1.x*cos(line2.y))/d;
+  return new PVector(x, y);
 }
 
 /* additional variables */
@@ -154,7 +216,6 @@ void mousePressed() {
 /* rotate around the x and z axis on mousedrag */
 void mouseDragged() {
   if(!scrollbar.locked){
-    float delta = 0.01;
     rotX = clampPI( rotX + rScale * delta * (lastMY - mouseY) );
     rotZ = clampPI( rotZ + rScale * delta * (mouseX - lastMX) );
     lastMX = mouseX;

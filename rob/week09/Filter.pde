@@ -20,8 +20,8 @@ class Filter {
     switch(i) {
       case 2:
         float[][] grain = {{ 0, 1, 0 }, 
-                             { 1, 0, 1 }, 
-                             { 0, 1, 0 }};
+                           { 1, 0, 1 }, 
+                           { 0, 1, 0 }};
         return grain;
       case 3:
         float[][] gauss3 = {{ 9, 12, 9 }, 
@@ -177,17 +177,17 @@ class Filter {
     if (weight < 1) { 
       weight = 1;
     }
-
+    int h = N/2;
     int r = 0;
     int g = 0;
     int b = 0;
-    for (int i = N/2; i < result.width - N/2; i++) {
-      for (int j = N/2; j < result.height - N/2; j++) {
+    for (int i = h; i < result.width - h; i++) {
+      for (int j = h; j < result.height - h; j++) {
         for (int k = 0; k < N; ++k) {
           for (int l = 0; l < N; ++l) {
-            r += red(img.pixels[(j-N/2+l)*img.width + i-N/2+k])*kernel[k][l];
-            g += green(img.pixels[(j-N/2+l)*img.width + i-N/2+k])*kernel[k][l];
-            b += blue(img.pixels[(j-N/2+l)*img.width + i-N/2+k])*kernel[k][l];
+            r += red(img.pixels[(j-h+l)*img.width + i-h+k])*kernel[k][l];
+            g += green(img.pixels[(j-h+l)*img.width + i-h+k])*kernel[k][l];
+            b += blue(img.pixels[(j-h+l)*img.width + i-h+k])*kernel[k][l];
           }
         }
         result.pixels[j*img.width + i] = color(r/weight, g/weight, b/weight);
@@ -247,7 +247,7 @@ class Filter {
     img = src.copy();
     truncate(176);
     truncate_inverted(26);
-    clamp_hue(90, 135);
+    clamp_hue(80, 135);
     saturation_threshold(60);
     convolute(kC(GAUSS5));
     threshold_to_zero(150);
